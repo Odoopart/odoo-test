@@ -1,8 +1,0 @@
-Nama Tampilan,Akun Beban,Akun Laba,Akun Perbedaan Harga,Akun Produksi,Akun Valuasi stok
-Bahan Baku Beverage,5101.01 HPP Beverage,4101.01 Penjualan Menu Beverage,,,1103.01 Persediaan Bahan Baku Beverage
-Bahan Baku Food,5101.02 HPP Food,4101.02 Penjualan Menu Food,,,1103.02 Persediaan Bahan Baku Food
-Bahan Pendukung Menu,5101.04 HPP Bahan Pendukung Menu,4101.02 Penjualan Menu Food,,,1103.03 Persediaan Bahan Pendukung Menu
-Barang Perlengkapan Operasional,5101.06 Beban Pemakaian Perlengkapan Operasional,4101.02 Penjualan Menu Food,,,1103.05 Persediaan Barang Perlengkapan Operasional
-Gas,5101.03 HPP Gas,4101.02 Penjualan Menu Food,,,1103.02 Persediaan Bahan Baku Food
-Menu Beverage,5101.01 HPP Beverage,4101.01 Penjualan Menu Beverage,,,
-Menu Food,5101.02 HPP Food,4101.02 Penjualan Menu Food,,,
