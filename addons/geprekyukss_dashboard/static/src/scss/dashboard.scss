@@ -1,199 +1,529 @@
 // =====================================================================
-// Dashboard Keuangan Geprekyukss — Redesign "Power BI" (Stage 1)
-// Spec: UI laporan/SPEC_DASHBOARD_REDESIGN_POWERBI.md
-// Bahasa visual: kanvas abu sangat muda, kartu putih radius 8px dengan
-// elevasi tipis, warna hanya untuk makna (naik/turun & kategori),
-// label sentence case, font Inter (fallback Segoe UI/system).
-// Inter dimuat via <link> dari dashboard.js (CSS @import tidak reliable
-// di dalam bundle gabungan Odoo).
+// Dashboard Keuangan Geprekyukss — Overhaul UI (High-Fidelity ERP mock)
+// Sumber desain: "High-Fidelity ERP Finance Dashboard.make" (Figma Make).
+// Bahasa visual mock: top nav NAVY gelap + sidebar putih, kanvas slate-100,
+// kartu putih radius 16px, aksen teal sebagai identitas, angka tabular
+// JetBrains Mono, warna hanya untuk makna (naik/turun/status).
+// Font (Inter + JetBrains Mono) dimuat via <link> dari dashboard.js.
+//
+// File ini = DESIGN SYSTEM. Dipakai bersama oleh dashboard.xml dan
+// report_shell.xml (root .gk-dash). Style khusus laporan ada di report.scss.
 // =====================================================================
 
 // ---------------------------------------------------------------
-// DESIGN TOKENS (spec §2)
+// DESIGN TOKENS
 // ---------------------------------------------------------------
-$bg-canvas: #F5F6F8;        // latar halaman — bukan putih polos
-$surface-card: #FFFFFF;     // latar kartu/panel
-$border-hairline: #E4E7EC;  // border 1px kartu/tabel/divider
-$text-primary: #1A1D29;     // judul, angka besar
-$text-secondary: #6B7280;   // label kecil, keterangan
-$brand: #0F7C6C;            // teal Contra Group (identitas)
-$brand-dark: #0B5F53;       // turunan brand (gradient logo/chart)
-$brand-tint: rgba(15, 124, 108, 0.08);   // brand 8% (active state)
-$brand-tint-soft: rgba(15, 124, 108, 0.14);
-$positive: #1E8E5A;         // naik / sehat
-$negative: #D64545;         // turun / rugi / minus
-$accent-amber: #E8A33D;     // kategori sekunder (bukan status)
-$accent-blue: #3B6FE0;      // kategori sekunder ke-2
+// Navy scale (chrome/shell + seri chart utama)
+$navy-950: #05101f;
+$navy-900: #091628;
+$navy-800: #0e1e38;
+$navy-750: #132548;
+$navy-700: #1a2f5a;
+$navy-600: #243f78;
+$navy-500: #2f5096;
+$navy-400: #4370bb;
+$navy-300: #6b93d0;
+$navy-200: #a8c1e5;
+$navy-150: #c5d8ef;
+$navy-100: #dce8f5;
+$navy-50: #eef4fb;
 
-// Turunan netral (dari token, tidak ada warna liar)
-$hover-wash: #F2F4F6;       // hover item navigasi/list
-$track: #EDF0F3;            // track progress bar
-$divider-soft: #EEF1F4;     // pemisah baris tabel/list
-$panel-wash: #F8FAFB;       // blok panel di dalam kartu
-$scrollbar: #D2D7DE;
+// Teal — identitas Geprekyukss
+$teal-800: #0c6560;
+$teal-700: #0e7c76;
+$teal-600: #0d9488;
+$teal-500: #14b8a6;
+$teal-400: #2dd4bf;
+$teal-300: #5eead4;
+$teal-200: #99f6e4;
+$teal-100: #ccfbf1;
+$teal-50: #f0fdfa;
 
-// Satu-satunya shadow kartu (spec §2 Layout)
+// Emerald — positif / pass
+$emerald-900: #064e3b;
+$emerald-800: #065f46;
+$emerald-700: #047857;
+$emerald-600: #059669;
+$emerald-500: #10b981;
+$emerald-400: #34d399;
+$emerald-100: #d1fae5;
+$emerald-50: #ecfdf5;
+
+// Amber — review / perhatian
+$amber-800: #92400e;
+$amber-700: #b45309;
+$amber-600: #d97706;
+$amber-500: #f59e0b;
+$amber-400: #fbbf24;
+$amber-100: #fef3c7;
+$amber-50: #fffbeb;
+
+// Red — negatif / gagal
+$red-700: #b91c1c;
+$red-600: #dc2626;
+$red-500: #ef4444;
+$red-100: #fee2e2;
+$red-50: #fef2f2;
+
+// Slate — netral
+$slate-950: #020617;
+$slate-900: #0f172a;
+$slate-800: #1e293b;
+$slate-700: #334155;
+$slate-600: #475569;
+$slate-500: #64748b;
+$slate-400: #94a3b8;
+$slate-300: #cbd5e1;
+$slate-200: #e2e8f0;
+$slate-150: #eaf0f7;
+$slate-100: #f1f5f9;
+$slate-50: #f8fafc;
+
+$font-sans: 'Inter', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+$radius-card: 16px;
+$radius-control: 10px;
 $card-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
-
-$radius-card: 8px;          // semua kartu — "alat kerja", bukan app konsumen
-$radius-control: 6px;       // pill/button filter
-$font-stack: 'Inter', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+$card-shadow-md: 0 4px 12px rgba(9, 22, 40, 0.08);
+$topnav-h: 56px;
+$sidebar-w: 256px;
 
 // ---------------------------------------------------------------
 // LAYOUT & SCROLL
-// Odoo membungkus action client dalam .o_action_manager > .o_action
-// yang overflow:hidden + height:100% — jadi .gk-dash harus membatasi
-// tingginya sendiri dan .gk-main yang di-scroll (body tidak pernah scroll).
+// Odoo membungkus action client dalam .o_action_manager > .o_action yang
+// overflow:hidden + height:100% — .gk-dash membatasi tingginya sendiri dan
+// hanya .gk-main / .gk-sidebar yang scroll (body tidak pernah scroll).
 // ---------------------------------------------------------------
 .gk-dash {
     display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
-    min-height: 0;      // kunci flex agar child boleh mengecil & overflow bekerja
-    overflow: hidden;   // scroll ditangani .gk-main / .gk-sidebar, bukan di sini
-    background: $bg-canvas;
-    color: $text-primary;
-    font-family: $font-stack;
-    font-size: 14px;
-}
-
-// ---------------------------------------------------------------
-// SIDEBAR
-// (Reshape — section label, "Live", last-update — Stage 6; token saja dulu)
-// ---------------------------------------------------------------
-.gk-sidebar {
-    width: 260px;
-    flex-shrink: 0;
-    background: $surface-card;
-    border-right: 1px solid $border-hairline;
-    padding: 28px 16px 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 32px;
-    height: 100%;
     min-height: 0;
-    overflow-y: auto;   // aman bila nav makin banyak item
+    overflow: hidden;
+    background: $slate-100;
+    color: $slate-900;
+    font-family: $font-sans;
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     box-sizing: border-box;
 
-    // scrollbar tipis saja (isi sidebar normalnya muat)
-    &::-webkit-scrollbar { width: 6px; }
-    &::-webkit-scrollbar-thumb { background: $scrollbar; border-radius: 999px; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    // Reset tipografi: Odoo backend memberi margin/h2 default yang besar.
+    h1, h2, h3, h4, h5, p { margin: 0; font-weight: inherit; font-size: inherit; }
+    a { text-decoration: none; color: inherit; }
+    button { font-family: inherit; font-size: inherit; cursor: pointer; border: none; background: none; color: inherit; padding: 0; }
+    table { border-collapse: separate; border-spacing: 0; }
+    svg { display: block; flex-shrink: 0; }
+
+    // Scrollbar tipis ala mock
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: $slate-300; border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: $slate-400; }
 }
 
+// Animasi masuk (mock: anim-fade-up / anim-scale-in / anim-slide-right)
+@keyframes gk-fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes gk-scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+}
+@keyframes gk-slide-right {
+    from { transform: translateX(100%); opacity: 0; }
+    to   { transform: translateX(0); opacity: 1; }
+}
+@keyframes gk-pulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.35; }
+}
+
+// Animasi masuk konten (mock: anim-fade-up) — kartu KPI & section.
+.gk-kpi,
+.gk-section { animation: gk-fade-up 0.4s ease both; }
+
+// Stagger berurutan (mock: stagger-1..6) — kartu KPI & section.
+.gk-dash .anim-1 { animation-delay: 0.05s; }
+.gk-dash .anim-2 { animation-delay: 0.10s; }
+.gk-dash .anim-3 { animation-delay: 0.15s; }
+.gk-dash .anim-4 { animation-delay: 0.20s; }
+.gk-dash .anim-5 { animation-delay: 0.25s; }
+.gk-dash .anim-6 { animation-delay: 0.30s; }
+
+// Hormati preferensi "reduce motion" (aksesibilitas).
+@media (prefers-reduced-motion: reduce) {
+    .gk-kpi,
+    .gk-section { animation: none; }
+}
+
+// ---------------------------------------------------------------
+// TOP NAV — bar navy sticky (mock: header)
+// ---------------------------------------------------------------
+.gk-topnav {
+    flex-shrink: 0;
+    // Diseragamkan ke kanvas terang (putih) supaya tidak terbaca sebagai
+    // "header kedua" setelah navbar Odoo. Brand pindah sepenuhnya ke sidebar.
+    background: #fff;
+    border-bottom: 1px solid $slate-200;
+    box-shadow: 0 1px 2px rgba(9, 22, 40, 0.06);
+    // Mock header: sticky top-0 z-50. Layout kita scroll di dalam .gk-main,
+    // jadi bar ini memang selalu terlihat; sticky menjaga perilaku itu bila
+    // kontainer luar (webclient Odoo) yang men-scroll di layar kecil.
+    position: sticky;
+    top: 0;
+    z-index: 50;
+
+    .gk-topnav-inner {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 0 16px;
+
+        @media (min-width: 1280px) { padding: 0 32px; }
+    }
+
+    .gk-topnav-row {
+        height: $topnav-h;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+
+    .gk-topnav-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-width: 0;
+        flex-shrink: 0;
+    }
+
+    .gk-nav-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: $radius-control;
+        color: $slate-500;
+        transition: background 0.15s ease, color 0.15s ease;
+
+        &:hover { background: $slate-100; color: $slate-900; }
+
+        @media (min-width: 1024px) { display: none; }
+    }
+
+    // Brand mark/wordmark TIDAK lagi di topnav — satu-satunya brand ada di
+    // sidebar (.gk-brand), supaya tidak ada header/logo ganda.
+
+    // Filter tengah (periode + outlet)
+    .gk-filters {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        justify-content: center;
+        min-width: 0;
+
+        @media (min-width: 768px) { display: flex; }
+    }
+
+    .gk-topnav-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .gk-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, $teal-500, $teal-700);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(5, 16, 31, 0.4);
+        user-select: none;
+        cursor: pointer;
+
+        &:hover { opacity: 0.9; }
+    }
+}
+
+// Pill navy (periode & outlet) — di dalam topnav
+.gk-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-control;
+    padding: 6px 12px;
+    color: $slate-600;
+    font-family: $font-mono;
+    font-size: 11px;
+    white-space: nowrap;
+
+    i { color: $teal-600; font-size: 12px; }
+}
+
+button.gk-pill {
+    transition: border-color 0.15s ease, color 0.15s ease;
+
+    &:hover { border-color: $teal-600; color: $teal-700; }
+}
+
+.gk-pill-label { white-space: nowrap; }
+.gk-pill-caret { opacity: 0.6; font-size: 10px; margin-left: 2px; }
+
+// Dropdown di bawah pill (outlet picker)
+.gk-pill-menu-wrap {
+    position: relative;
+
+    &.open { z-index: 60; }
+}
+
+.gk-pill-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 168px;
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 12px 28px rgba(9, 22, 40, 0.12);
+    z-index: 60;
+    animation: gk-scale-in 0.18s ease both;
+}
+
+.gk-pill-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    text-align: left;
+    padding: 10px 16px;
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $slate-600;
+    transition: background 0.12s ease;
+
+    &:hover { background: $slate-50; }
+
+    &.active { color: $teal-700; font-weight: 700; }
+
+    .gk-pill-bullet {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: $teal-400;
+        flex-shrink: 0;
+    }
+}
+
+// ---------------------------------------------------------------
+// BODY — sidebar + main
+// ---------------------------------------------------------------
+.gk-body {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+}
+
+.gk-sidebar {
+    width: $sidebar-w;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid $slate-200;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+
+    // Off-canvas < 1024px (mock: -translate-x-full + overlay)
+    @media (max-width: 1023px) {
+        position: fixed;
+        top: $topnav-h;
+        left: 0;
+        bottom: 0;
+        height: auto;
+        z-index: 45;
+        box-shadow: 0 20px 40px rgba(9, 22, 40, 0.18);
+        transform: translateX(-100%);
+        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+
+        &.gk-sidebar-open { transform: translateX(0); }
+    }
+}
+
+.gk-sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    top: $topnav-h;
+    background: rgba(9, 22, 40, 0.5);
+    z-index: 44;
+
+    @media (min-width: 1024px) { display: none; }
+}
+
+// Brand block sidebar (logo asset Geprekyukss + wordmark)
 .gk-brand {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 0 8px;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid $slate-100;
 }
 
-// Branding Geprekyukss: logo asset (riquest 12 Sep) — dipakai di kedua
-// sidebar via <img class="gk-brand-logo-img">. Kelas monogram lama
-// (.gk-brand-logo) tidak lagi dirender; dipertahankan hanya sebagai legacy.
 .gk-brand-logo-img {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
     object-fit: cover;
-    box-shadow: 0 2px 6px rgba(15, 124, 108, 0.25);
     flex-shrink: 0;
-}
-
-.gk-brand-logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: linear-gradient(135deg, $brand, $brand-dark);
-    color: #fff;
-    font-weight: 700;
-    font-size: 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 6px rgba(15, 124, 108, 0.25);
+    box-shadow: 0 2px 8px rgba(9, 22, 40, 0.18);
 }
 
 .gk-brand-name {
-    font-weight: 700;
-    color: $text-primary;
-    font-size: 15px;
+    font-weight: 800;
+    font-size: 13px;
+    color: $navy-900;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
 }
 
 .gk-brand-sub {
-    font-size: 11.5px;
-    color: $text-secondary;
-    letter-spacing: 0.02em;
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $slate-400;
+    margin-top: 3px;
 }
 
 .gk-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px;
+    min-height: 0;
 
-// Section label pengelompok navigasi (spec §3 Sidebar — fungsional, bukan dekorasi)
-.gk-nav-section {
-    font-size: 11px;
-    font-weight: 500;
-    color: $text-secondary;
-    margin: 0 0 2px 14px;
-}
-
-// F-UI.2 (gaya FinanceFlow): section header grup di dalam LAPORAN OCA —
-// uppercase kecil abu-abu, letter-spacing lebar, pemisah tipis di atas
-// (grup pertama tidak perlu pemisah — dihandle :not(:first-child) di bawah).
-.gk-nav-section.gk-nav-group {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: $text-secondary;
-    opacity: 0.85;
-    margin: 10px 0 2px 14px;
-}
-
-// F-UI.2: nav item laporan — lebih ringkas dari tab utama (sidebar memuat
-// 4 tab + 9 laporan; ukuran font sedikit turun agar ritme grup tetap jelas).
-.gk-nav-item-sm {
-    padding: 7px 14px;
-    font-size: 13px;
-    gap: 10px;
-
-    i { font-size: 13px; }
-}
-
-.gk-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 11px 14px;
-    border-radius: $radius-card;
-    color: $text-secondary;
-    text-decoration: none;
-    font-weight: 500;
-    transition: background 0.15s ease, color 0.15s ease;
-
-    i { width: 18px; text-align: center; font-size: 15px; }
-
-    &:hover { background: $hover-wash; color: $text-primary; }
-
-    // Pola khas navigasi BI: brand 8% + left border 3px brand
-    &.active {
-        background: $brand-tint;
-        box-shadow: inset 3px 0 0 $brand;
-        color: $brand;
-        font-weight: 600;
+    .gk-nav-section {
+        font-family: $font-mono;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: $slate-400;
+        padding: 12px 12px 6px;
     }
 }
 
-.gk-sidebar-bottom {
-    margin-top: auto;
+.gk-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: $radius-control;
+    text-align: left;
+    color: $slate-600;
     font-size: 13px;
-    padding: 12px 8px 0;
-    border-top: 1px solid $border-hairline;
+    line-height: 1.3;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    i {
+        font-size: 15px;
+        width: 17px;
+        text-align: center;
+        color: $slate-400;
+        flex-shrink: 0;
+        transition: color 0.15s ease;
+    }
+
+    &:hover {
+        background: $slate-50;
+        color: $slate-800;
+
+        i { color: $slate-600; }
+    }
+
+    &.active {
+        background: $teal-50;
+        color: $teal-700;
+        font-weight: 600;
+
+        i { color: $teal-600; }
+
+        // Indikator kiri (mock: bar 3px teal)
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 24px;
+            background: $teal-500;
+            border-radius: 0 999px 999px 0;
+        }
+    }
+
+    &.disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+
+        &:hover { background: transparent; }
+    }
+
+    .gk-nav-lock {
+        margin-left: auto;
+        font-size: 11px;
+        opacity: 0.7;
+    }
 }
 
-// Header baris Koneksi outlet: label kiri, "● Live" kanan (spec §3 Sidebar)
+.gk-nav-item-sm { font-size: 12.5px; }
+
+.gk-nav-back {
+    margin-top: 12px;
+    border-top: 1px solid $slate-200;
+    padding-top: 12px;
+}
+
+.gk-nav-engine {
+    padding: 12px;
+    margin-top: 4px;
+
+    .gk-engine-tag {
+        font-size: 10px;
+        letter-spacing: 0.4px;
+        text-transform: uppercase;
+        color: $slate-400;
+        font-family: $font-mono;
+    }
+}
+
+// Footer sidebar — status koneksi outlet (mock)
+.gk-sidebar-bottom {
+    flex-shrink: 0;
+    padding: 16px;
+    border-top: 1px solid $slate-100;
+}
+
 .gk-outlets-head {
     display: flex;
     align-items: center;
@@ -202,189 +532,1845 @@ $font-stack: 'Inter', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial
 }
 
 .gk-outlets-label {
-    font-size: 10.5px;
-    letter-spacing: 0.1em;
-    color: $text-secondary;
-    margin-bottom: 0;
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $slate-400;
+}
+
+.gk-live-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: $font-mono;
+    font-size: 11px;
     font-weight: 600;
+    color: $emerald-600;
+}
+
+.gk-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: $emerald-500;
+    display: inline-block;
+    animation: gk-pulse 2s ease-in-out infinite;
 }
 
 .gk-outlet {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 4px 0;
-    color: $text-primary;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 12px;
+    color: $slate-600;
+
+    span.gk-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: $emerald-500;
+        flex-shrink: 0;
+    }
+
+    .gk-outlet-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
-// Indikator "● Live" — right-aligned di header Koneksi outlet (spec §3 Sidebar)
-.gk-live-flag {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 11px;
-    color: $positive;
-    font-weight: 600;
-}
+.gk-updated {
+    font-family: $font-mono;
+    font-size: 10px;
+    color: $slate-300;
+    margin-top: 10px;
 
-.gk-live-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: $positive;
-}
-
-// Timestamp "Diperbarui HH:MM" — penutup blok sidebar, clock icon (spec §3)
-.gk-nav-section.gk-updated {
-    margin: 12px 0 0;
-    padding-top: 0;
-    border-top: none;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-
-    i { font-size: 11px; color: $text-secondary; }
-}
-
-.gk-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: $positive;
-    box-shadow: 0 0 0 3px rgba(30, 142, 90, 0.15);
-    flex-shrink: 0;
+    i { margin-right: 4px; }
 }
 
 // ---------------------------------------------------------------
-// MAIN & HEADER
+// MAIN CONTENT
 // ---------------------------------------------------------------
 .gk-main {
     flex: 1;
     min-width: 0;
-    min-height: 0;          // boleh menyusut dalam flex, prerequisite overflow
-    height: 100%;
-    overflow-y: auto;       // <-- INI scroll konten dashboard
-    -webkit-overflow-scrolling: touch;
-    padding: 28px 32px 40px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 28px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
 
-    &::-webkit-scrollbar { width: 8px; }
-    &::-webkit-scrollbar-track { background: transparent; }
-    &::-webkit-scrollbar-thumb { background: $scrollbar; border-radius: 999px; }
-    &::-webkit-scrollbar-thumb:hover { background: #B9BFC8; }
+    @media (min-width: 1280px) { padding: 28px 32px; }
 }
 
+// Header halaman di dalam main (dipakai report shell; dashboard memakai
+// eyebrow row ala mock karena filternya ada di topnav)
 .gk-header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 20px;
     gap: 16px;
     flex-wrap: wrap;
+    padding: 0;               // shell mock tidak punya kartu header
+    border-bottom: none;
 }
 
 .gk-title {
-    font-size: 22px;
-    font-weight: 600;
-    margin: 0;
-    color: $text-primary;
-}
-
-// SPEC_OVERHAUL F1: "Premium" pill kecil di samping judul (mirip referensi 6 PNG)
-.gk-premium-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #fff;
-    background: linear-gradient(135deg, #ef4444, #b91c1c);
-    padding: 3px 9px 3px 8px;
-    border-radius: 999px;
-    margin-left: 6px;
-    vertical-align: middle;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.30);
-}
-
-.gk-premium-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: #fff;
-    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
-}
-
-.gk-header-title {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 4px;
-    > .gk-subtitle { flex-basis: 100%; margin-top: 4px; }
-}
-
-// SPEC_OVERHAUL F0: Avatar bulat top-right (mirip referensi)
-.gk-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, $brand, $brand-dark);
-    color: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 700;
-    font-size: 15px;
-    flex-shrink: 0;
-    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.12);
-    cursor: default;
+    font-size: 20px;
+    font-weight: 800;
+    color: $navy-900;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
 }
 
 .gk-subtitle {
-    color: $text-secondary;
-    font-size: 13px;
-    margin-top: 2px;
+    font-size: 12px;
+    color: $slate-500;
+    margin-top: 4px;
 }
 
 .gk-header-actions {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
-// SPEC_OVERHAUL F0: Date Range picker (ganti gk-month-picker) — mirip report.scss F-UI.5
-// Input date native browser, styled token existing. Preset chip di bawah.
+// Eyebrow row ala mock: "RINGKASAN KINERJA · SEMUA OUTLET" + catatan kanan
+.gk-eyebrow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .gk-eyebrow-text {
+        font-family: $font-mono;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: $slate-400;
+    }
+
+    .gk-eyebrow-note {
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $slate-300;
+    }
+}
+
+// ---------------------------------------------------------------
+// BUTTONS
+// ---------------------------------------------------------------
+.gk-btn,
+.gk-btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: $radius-control;
+    padding: 7px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    background: $teal-600;
+    border: 1px solid $teal-600;
+    color: #fff;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+
+    &:hover { background: $teal-500; border-color: $teal-500; }
+
+    i { font-size: 12px; }
+
+    &:disabled { opacity: 0.5; cursor: default; }
+}
+
+.gk-btn-ghost {
+    // Topnav kini terang → varian ghost juga terang (dulu navy).
+    background: #fff;
+    border-color: $slate-200;
+    color: $slate-700;
+
+    &:hover {
+        background: $slate-50;
+        border-color: $navy-200;
+        color: $navy-700;
+    }
+}
+
+// Tombol di atas kanvas terang (report shell / konten)
+.gk-main .gk-btn-ghost {
+    background: #fff;
+    border-color: $slate-200;
+    color: $slate-700;
+
+    &:hover {
+        background: $slate-50;
+        border-color: $navy-200;
+        color: $navy-700;
+    }
+}
+
+// ---------------------------------------------------------------
+// BADGES (mock: pass / review / pending / demo / draft / info / warn)
+// ---------------------------------------------------------------
+.gk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: $font-mono;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    line-height: 1.6;
+
+    &.pass,
+    &.up {
+        background: $emerald-50;
+        color: $emerald-700;
+        border-color: $emerald-100;
+    }
+
+    &.review,
+    &.draft {
+        background: $amber-50;
+        color: $amber-700;
+        border-color: $amber-100;
+    }
+
+    &.pending {
+        background: $slate-100;
+        color: $slate-500;
+        border-color: $slate-200;
+    }
+
+    &.demo {
+        background: $navy-50;
+        color: $navy-500;
+        border-color: $navy-200;
+    }
+
+    &.info {
+        background: $teal-50;
+        color: $teal-700;
+        border-color: $teal-100;
+    }
+
+    &.warn,
+    &.down {
+        background: $red-50;
+        color: $red-700;
+        border-color: $red-100;
+    }
+
+    &.flat {
+        background: transparent;
+        border-color: transparent;
+        padding: 0;
+    }
+}
+
+// ---------------------------------------------------------------
+// TOOLTIP (mock: .tip-wrap / .tip-box / .tip-box-arrow)
+// ---------------------------------------------------------------
+.gk-tip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    .gk-tip-box {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%) translateY(4px);
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+        transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+        z-index: 999;
+        width: 230px;
+        // Fase 5: jangan pernah lebih lebar dari viewport.
+        // Catatan: `min()` dicampur calc() tidak didukung libsass → pakai
+        // width + max-width (hasil setara).
+        width: calc(100vw - 32px);
+        max-width: 230px;
+        background: $navy-900;
+        color: #fff;
+        font-size: 11px;
+        line-height: 1.55;
+        padding: 12px;
+        border-radius: 12px;
+        border: 1px solid $navy-750;
+        box-shadow: 0 20px 40px rgba(5, 16, 31, 0.4);
+        text-align: left;
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: normal;
+    }
+
+    .gk-tip-arrow {
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: $navy-900;
+    }
+
+    // Fase 5: muncul juga saat diakses keyboard (span punya tabindex="0").
+    &:hover .gk-tip-box,
+    &:focus-within .gk-tip-box {
+        opacity: 1;
+        visibility: visible;
+        transform: translateX(-50%) translateY(0);
+    }
+
+    // Tooltip di dalam .gk-section-tools menempel tepi kanan kartu — kalau
+    // tetap di-center, bubble-nya meluber keluar layar di viewport sempit.
+    // Karena itu dianker ke kanan (transform tanpa translateX).
+    .gk-section-tools & .gk-tip-box {
+        left: auto;
+        right: 0;
+        transform: translateY(4px);
+    }
+
+    .gk-section-tools & .gk-tip-arrow {
+        left: auto;
+        right: 12px;
+        transform: none;
+    }
+
+    .gk-section-tools &:hover .gk-tip-box,
+    .gk-section-tools &:focus-within .gk-tip-box {
+        transform: translateY(0);
+    }
+}
+
+.gk-info {
+    color: $slate-300;
+    cursor: help;
+    transition: color 0.15s ease;
+
+    &:hover { color: $slate-500; }
+}
+
+// ---------------------------------------------------------------
+// SECTION CARD (mock: SectionCard)
+// ---------------------------------------------------------------
+.gk-section {
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-card;
+    box-shadow: $card-shadow;
+    overflow: hidden;
+    animation: gk-fade-up 0.4s ease both;
+
+    .gk-section-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 24px;
+        border-bottom: 1px solid $slate-100;
+    }
+
+    .gk-section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: $navy-900;
+        line-height: 1;
+    }
+
+    .gk-section-tools {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .gk-section-body { padding: 24px; }
+
+    // Blok penutup di dalam section (mock: legend progress + catatan)
+    .gk-section-divider {
+        margin-top: 20px;
+        padding-top: 16px;
+        border-top: 1px solid $slate-100;
+    }
+}
+
+// Kartu generik tanpa header (dipakai panel neraca/footer blok)
+.gk-card {
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-card;
+    box-shadow: $card-shadow;
+    animation: gk-fade-up 0.4s ease both;
+}
+
+// ---------------------------------------------------------------
+// KPI CARD (mock: KpiCard)
+// ---------------------------------------------------------------
+.gk-kpi-strip {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: $slate-200 transparent;
+
+    &::-webkit-scrollbar { height: 3px; }
+}
+
+.gk-kpi {
+    position: relative;
+    flex: 1 1 0;
+    min-width: 188px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-card;
+    box-shadow: $card-shadow;
+    padding: 20px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    animation: gk-fade-up 0.4s ease both;
+
+    &:hover {
+        box-shadow: $card-shadow-md;
+        border-color: $navy-200;
+    }
+
+    .gk-kpi-top {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 8px;
+    }
+
+    .gk-kpi-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        background: $navy-800;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 15px;
+        transition: background 0.2s ease;
+
+        &.teal { background: linear-gradient(135deg, $teal-600, $teal-800); }
+        &.amber { background: linear-gradient(135deg, $amber-500, $amber-700); }
+        &.blue { background: linear-gradient(135deg, $navy-400, $navy-700); }
+        &.emerald { background: linear-gradient(135deg, $emerald-500, $emerald-700); }
+        &.red { background: linear-gradient(135deg, $red-500, $red-700); }
+    }
+
+    &:hover .gk-kpi-icon { background: $navy-700; }
+    &:hover .gk-kpi-icon.teal { background: linear-gradient(135deg, $teal-500, $teal-700); }
+
+    .gk-kpi-value {
+        font-family: $font-mono;
+        font-weight: 800;
+        font-size: 22px;
+        line-height: 1;
+        color: $navy-900;
+        letter-spacing: -0.02em;
+
+        &.neg { color: $red-600; }
+
+        &.sm { font-size: 18px; }
+    }
+
+    .gk-kpi-sub {
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-400;
+        margin-top: 6px;
+    }
+
+    .gk-kpi-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: $slate-500;
+        margin-bottom: 6px;
+    }
+
+    .gk-kpi-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: auto;
+
+        .gk-kpi-delta {
+            font-family: $font-mono;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+
+            &.up { color: $emerald-600; }
+            &.down { color: $red-500; }
+            &.flat { color: $slate-400; }
+        }
+    }
+
+    // Aksen bawah muncul saat hover (mock)
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 16px;
+        right: 16px;
+        height: 2px;
+        border-radius: 999px;
+        background: $teal-300;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+
+    &:hover::after { opacity: 1; }
+    &.is-up::after { background: $emerald-400; }
+    &.is-down::after { background: $red-500; }
+    &.is-neutral::after { background: $teal-400; }
+
+    // Delay stagger (.anim-1..6) didefinisikan global di bagian animasi.
+}
+
+// ---------------------------------------------------------------
+// GRID UTILITIES
+// ---------------------------------------------------------------
+.gk-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+
+    @media (min-width: 1024px) { grid-template-columns: 1fr 1fr; }
+}
+
+.gk-grid-3 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+
+    @media (min-width: 640px) { grid-template-columns: repeat(3, 1fr); }
+}
+
+.gk-grid-4 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+
+    @media (min-width: 640px) { grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 1024px) { grid-template-columns: repeat(4, 1fr); }
+}
+
+// ---------------------------------------------------------------
+// CHART BOX & LEGEND
+// ---------------------------------------------------------------
+.gk-chart-box {
+    position: relative;
+    width: 100%;
+    height: 300px;
+
+    canvas { width: 100% !important; }
+
+    &.h-220 { height: 220px; }
+    &.h-260 { height: 260px; }
+    &.h-190 { height: 190px; }
+    &.square {
+        height: 200px;
+        width: 200px;
+        flex-shrink: 0;
+    }
+}
+
+.gk-legend {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+
+    .gk-legend-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-500;
+
+    }
+}
+
+// ---------------------------------------------------------------
+// CHANNEL / DONUT LEGEND + DELIVERY DETAIL
+// ---------------------------------------------------------------
+.gk-channel-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+
+    @media (min-width: 640px) { flex-direction: row; }
+}
+
+.gk-channel-legend {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.gk-channel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    .gk-channel-main {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+    }
+
+    .gk-legend-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 4px;
+        flex-shrink: 0;
+    }
+
+    .gk-channel-name {
+        font-size: 13px;
+        font-weight: 500;
+        color: $slate-700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .gk-channel-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .gk-channel-value {
+        font-family: $font-mono;
+        font-weight: 700;
+        color: $navy-900;
+        min-width: 40px;
+        text-align: right;
+    }
+}
+
+// Bar tipis di dalam baris channel (mock: w-20 h-1.5)
+.gk-mini-track {
+    width: 72px;
+    height: 6px;
+    background: $slate-100;
+    border-radius: 999px;
+    overflow: hidden;
+    display: none;
+
+    @media (min-width: 640px) { display: block; }
+
+    .gk-mini-fill {
+        height: 6px;
+        border-radius: 999px;
+    }
+}
+
+.gk-sub-list {
+    flex-basis: 100%;
+    border-top: 1px solid $slate-100;
+    margin-top: 4px;
+    padding-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    .gk-sub-title {
+        font-family: $font-mono;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: $slate-400;
+    }
+
+    .gk-sub-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        font-family: $font-mono;
+        font-size: 11px;
+
+        .gk-sub-label { color: $slate-500; }
+        .gk-sub-value { color: $navy-900; }
+
+        &.is-total {
+            border-top: 1px solid $slate-100;
+            padding-top: 6px;
+
+            .gk-sub-value { color: $emerald-700; font-weight: 700; }
+        }
+    }
+}
+
+// ---------------------------------------------------------------
+// LIST ROW + BAR BREAKDOWN (beban, pembayaran, saldo)
+// Primitif untuk kartu breakdown ala mock; dipakai tab Laporan /
+// Penjualan / Biaya & HPP pada fase migrasi berikutnya.
+// ---------------------------------------------------------------
+.gk-bar-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.gk-bar-row {
+    padding: 12px 0;
+    border-bottom: 1px solid $slate-50;
+
+    &:last-child { border-bottom: none; }
+
+    .gk-bar-top {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 6px;
+    }
+
+    .gk-bar-name {
+        font-size: 13px;
+        color: $slate-700;
+
+        .gk-bar-count {
+            font-family: $font-mono;
+            font-size: 11px;
+            color: $slate-400;
+            margin-left: 4px;
+        }
+    }
+
+    .gk-bar-value {
+        font-family: $font-mono;
+        font-size: 13px;
+        font-weight: 600;
+        color: $navy-900;
+        white-space: nowrap;
+
+        .gk-pct {
+            font-size: 11px;
+            color: $slate-400;
+            font-weight: 400;
+            margin-left: 4px;
+        }
+    }
+}
+
+// Total di bawah daftar bar (Breakdown Beban / Komposisi Biaya)
+.gk-expense-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border-top: 1px solid $slate-200;
+    margin-top: 16px;
+    padding-top: 14px;
+    font-size: 14px;
+
+    span { color: $slate-500; }
+    b { color: $navy-900; font-size: 16px; font-weight: 700; font-family: $font-mono; }
+}
+
+.gk-bar-track {
+    width: 100%;
+    height: 6px;
+    background: $slate-100;
+    border-radius: 999px;
+    overflow: hidden;
+
+    .gk-bar-fill {
+        height: 6px;
+        border-radius: 999px;
+        transition: width 0.3s ease;
+    }
+
+    &.lg { height: 8px; .gk-bar-fill { height: 8px; } }
+}
+
+// Baris label/nilai generik (detail arus kas, neraca)
+.gk-list-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid $slate-50;
+
+    .gk-list-label {
+        font-size: 14px;
+        color: $slate-700;
+        min-width: 0;
+
+        .gk-list-note {
+            display: block;
+            font-family: $font-mono;
+            font-size: 10px;
+            color: $slate-400;
+            margin-top: 2px;
+        }
+    }
+
+    .gk-list-value {
+        font-family: $font-mono;
+        font-size: 14px;
+        font-weight: 600;
+        color: $slate-800;
+        white-space: nowrap;
+        flex-shrink: 0;
+
+        &.pos { color: $emerald-700; }
+        &.neg { color: $red-600; }
+        &.strong { color: $navy-900; font-weight: 800; font-size: 16px; }
+    }
+
+    &.is-bold {
+        border-top: 2px solid $navy-100;
+        border-bottom: none;
+        margin-top: 4px;
+
+        .gk-list-label { font-weight: 700; color: $navy-900; }
+    }
+}
+
+.gk-list-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 0 0;
+    margin-top: 8px;
+    border-top: 2px solid $navy-200;
+
+    .gk-list-total-label {
+        font-size: 14px;
+        font-weight: 800;
+        color: $navy-900;
+        text-transform: uppercase;
+        letter-spacing: 0.02em;
+    }
+
+    .gk-list-total-value {
+        font-family: $font-mono;
+        font-size: 18px;
+        font-weight: 800;
+        color: $navy-900;
+
+        &.pos { color: $emerald-700; }
+        &.neg { color: $red-700; }
+        &.teal { color: $teal-700; }
+    }
+
+    &.teal { border-top-color: $teal-200; }
+}
+
+// ---------------------------------------------------------------
+// CASH / BANK / SETTLEMENT CARDS (mock: BANK_CARDS)
+// ---------------------------------------------------------------
+.gk-cash-card {
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-card;
+    box-shadow: $card-shadow;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+
+    &:hover { box-shadow: $card-shadow-md; }
+
+    &.is-pass {
+        border-color: $emerald-100;
+        &:hover { border-color: $emerald-400; }
+    }
+
+    &.is-review {
+        border-color: $amber-100;
+        &:hover { border-color: $amber-400; }
+    }
+
+    .gk-cash-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+
+        .gk-cash-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .gk-cash-label {
+            flex: 1;
+            font-size: 11px;
+            font-weight: 500;
+            color: $slate-600;
+            min-width: 0;
+        }
+    }
+
+    &.is-pass .gk-cash-status { background: $emerald-500; }
+    &.is-review .gk-cash-status { background: $amber-500; }
+
+    .gk-cash-amount {
+        font-family: $font-mono;
+        font-size: 20px;
+        font-weight: 800;
+        color: $navy-900;
+        line-height: 1;
+    }
+
+    .gk-cash-pending {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: $font-mono;
+        font-size: 13px;
+        font-weight: 600;
+        color: $amber-700;
+
+        i { font-size: 14px; }
+    }
+
+    .gk-cash-note {
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $slate-400;
+    }
+}
+
+.gk-cash-summary {
+    margin-top: 16px;
+    background: #fff;
+    border: 1px solid $navy-100;
+    border-radius: $radius-card;
+    box-shadow: $card-shadow;
+    padding: 16px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+
+    .gk-cash-summary-total {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+
+        span {
+            font-family: $font-mono;
+            font-size: 11px;
+            color: $slate-500;
+        }
+
+        b {
+            font-family: $font-mono;
+            font-size: 20px;
+            font-weight: 800;
+            color: $navy-900;
+        }
+    }
+
+    .gk-cash-summary-note {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-400;
+    }
+}
+
+// ---------------------------------------------------------------
+// TABS (arus kas)
+// ---------------------------------------------------------------
+.gk-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 4px;
+    background: $slate-100;
+    border-radius: 12px;
+    width: fit-content;
+    margin-bottom: 24px;
+    max-width: 100%;
+    overflow-x: auto;
+
+    .gk-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: $radius-control;
+        font-family: $font-mono;
+        font-size: 11px;
+        font-weight: 600;
+        color: $slate-500;
+        white-space: nowrap;
+        transition: background 0.15s ease, color 0.15s ease;
+
+        i { font-size: 13px; }
+
+        &:hover { color: $slate-700; background: $slate-200; }
+
+        &.active {
+            background: $navy-900;
+            color: #fff;
+            box-shadow: 0 1px 2px rgba(9, 22, 40, 0.2);
+        }
+    }
+}
+
+// ---------------------------------------------------------------
+// CASHFLOW SECTION
+// ---------------------------------------------------------------
+.gk-cf-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 32px;
+
+    @media (min-width: 1024px) { grid-template-columns: 1fr 1fr; }
+}
+
+.gk-cf-rows {
+    .gk-cf-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+        border-bottom: 1px solid $slate-50;
+
+        .gk-cf-label {
+            font-size: 14px;
+            color: $slate-700;
+            transition: color 0.12s ease;
+            min-width: 0;
+        }
+
+        .gk-cf-value {
+            font-family: $font-mono;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
+
+            &.pos { color: $emerald-700; }
+            &.neg { color: $red-600; }
+        }
+
+        &:hover .gk-cf-label { color: $navy-800; }
+    }
+
+    .gk-cf-total {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 16px;
+        margin-top: 8px;
+
+        .gk-cf-total-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: $navy-900;
+        }
+
+        .gk-cf-total-value {
+            font-family: $font-mono;
+            font-size: 16px;
+            font-weight: 800;
+            white-space: nowrap;
+
+            &.pos { color: $emerald-700; }
+            &.neg { color: $red-700; }
+        }
+    }
+}
+
+.gk-cf-chart {
+    min-width: 0;
+
+    .gk-cf-chart-title {
+        font-family: $font-mono;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: $slate-400;
+        margin-bottom: 8px;
+    }
+}
+
+// ---------------------------------------------------------------
+// NERACA (snapshot: panel aset navy, panel ekuitas teal)
+// ---------------------------------------------------------------
+.gk-neraca {
+    .gk-neraca-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 24px;
+
+        &.navy { background: $navy-900; }
+        &.teal { background: $teal-700; }
+
+        span {
+            font-size: 12px;
+            font-weight: 700;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+        }
+
+        i { color: rgba(255, 255, 255, 0.7); font-size: 14px; }
+    }
+
+    .gk-neraca-body { padding: 24px; }
+}
+
+.gk-balance-check {
+    margin-top: 20px;
+    background: $amber-50;
+    border: 1px solid $amber-100;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    &.is-ok {
+        background: $emerald-50;
+        border-color: $emerald-100;
+    }
+
+    .gk-balance-check-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+
+        span {
+            font-size: 11px;
+            font-weight: 700;
+            color: $amber-800;
+        }
+    }
+
+    &.is-ok .gk-balance-check-head span { color: $emerald-800; }
+
+    .gk-balance-check-bar {
+        display: flex;
+        justify-content: space-between;
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $amber-700;
+    }
+
+    .gk-balance-check-note {
+        font-family: $font-mono;
+        font-size: 10px;
+        line-height: 1.6;
+        color: $amber-700;
+    }
+
+    &.is-ok .gk-balance-check-bar,
+    &.is-ok .gk-balance-check-note { color: $emerald-700; }
+}
+
+// ---------------------------------------------------------------
+// PSAK COMPLIANCE PANEL
+// ---------------------------------------------------------------
+.gk-psak-cols {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+
+    @media (min-width: 768px) { grid-template-columns: repeat(3, 1fr); }
+}
+
+.gk-psak-col {
+    .gk-psak-col-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-bottom: 8px;
+        margin-bottom: 12px;
+        border-bottom: 1px solid $slate-100;
+
+        .gk-psak-count {
+            font-family: $font-mono;
+            font-size: 10px;
+            color: $slate-400;
+        }
+    }
+
+    .gk-psak-items {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+.gk-psak-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid $slate-100;
+    background: $slate-50;
+    transition: border-color 0.15s ease;
+
+    i.gk-psak-icon { margin-top: 2px; font-size: 13px; }
+
+    .gk-psak-label {
+        font-size: 11px;
+        font-weight: 600;
+        line-height: 1.4;
+        color: $slate-600;
+    }
+
+    .gk-psak-note {
+        font-family: $font-mono;
+        font-size: 10px;
+        margin-top: 2px;
+        color: $slate-400;
+    }
+
+    &.pass {
+        background: $emerald-50;
+        border-color: $emerald-100;
+        i.gk-psak-icon { color: $emerald-600; }
+        .gk-psak-label { color: $emerald-900; }
+        .gk-psak-note { color: $emerald-600; }
+
+        &:hover { border-color: $emerald-400; }
+    }
+
+    &.review {
+        background: $amber-50;
+        border-color: $amber-100;
+        i.gk-psak-icon { color: $amber-500; }
+        .gk-psak-label { color: $amber-800; }
+        .gk-psak-note { color: $amber-600; }
+    }
+
+    &.pending {
+        background: $slate-50;
+        border-color: $slate-100;
+        i.gk-psak-icon { color: $slate-300; }
+        .gk-psak-label { color: $slate-600; }
+        .gk-psak-note { color: $slate-400; }
+    }
+}
+
+.gk-progress-bar {
+    display: flex;
+    gap: 6px;
+    height: 8px;
+
+    .gk-progress-seg {
+        height: 8px;
+        transition: width 0.3s ease;
+
+        &.pass { background: $emerald-500; border-radius: 999px 0 0 999px; }
+        &.review { background: $amber-400; }
+        &.pending { background: $slate-200; border-radius: 0 999px 999px 0; }
+    }
+}
+
+.gk-progress-legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+
+    .gk-progress-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $slate-500;
+
+        .gk-progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+
+            &.pass { background: $emerald-500; }
+            &.review { background: $amber-400; }
+            &.pending { background: $slate-200; }
+        }
+    }
+
+    .gk-progress-note {
+        margin-left: auto;
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $slate-300;
+    }
+}
+
+// ---------------------------------------------------------------
+// FINANCE TABLE (mock: .finance-table)
+// ---------------------------------------------------------------
+.gk-table-wrap {
+    overflow-x: auto;
+    border: 1px solid $slate-100;
+    border-radius: 12px;
+}
+
+.gk-finance-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 13px;
+
+    thead th {
+        background: $slate-50;
+        border-bottom: 2px solid $slate-200;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        padding: 12px 16px;
+        text-align: left;
+        font-family: $font-mono;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: $slate-400;
+        white-space: nowrap;
+
+        &.right { text-align: right; }
+        &.center { text-align: center; }
+        &:first-child { padding-left: 20px; }
+        &:last-child { padding-right: 20px; }
+    }
+
+    tbody td {
+        padding: 14px 16px;
+        border-bottom: 1px solid $slate-50;
+        font-family: $font-mono;
+        color: $slate-600;
+        white-space: nowrap;
+
+        &.right { text-align: right; font-variant-numeric: tabular-nums; }
+        &.center { text-align: center; }
+        &.strong { color: $navy-900; font-weight: 700; }
+        &.green { color: $emerald-700; font-weight: 700; }
+        &.teal { color: $teal-700; font-weight: 800; }
+        &.red { color: $red-600; }
+        &.muted { color: $slate-400; }
+
+        &:first-child { padding-left: 20px; }
+        &:last-child { padding-right: 20px; }
+    }
+
+    tbody tr { transition: background 0.12s ease; }
+
+    tbody tr:hover td { background: $navy-50; }
+
+    tbody tr:nth-child(even) td { background: $slate-50; }
+    tbody tr:nth-child(even):hover td { background: $navy-50; }
+
+    tbody tr.total-row td {
+        background: $navy-50;
+        font-weight: 700;
+        color: $navy-900;
+        border-top: 2px solid $navy-200;
+        border-bottom: 2px solid $navy-200;
+    }
+
+    tbody tr.total-row:hover td { background: $navy-50; }
+
+    // Sel label baris (nama bulan/outlet) — sans-serif tebal
+    .gk-cell-lead {
+        font-family: $font-sans;
+        font-size: 13px;
+        font-weight: 600;
+        color: $navy-900;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+}
+
+// Daftar kartu versi mobile untuk tabel (mock: mobile card list)
+.gk-mobile-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    @media (min-width: 768px) { display: none; }
+
+    .gk-mobile-card {
+        border: 1px solid $slate-200;
+        border-radius: 12px;
+        padding: 16px;
+        background: #fff;
+
+        &.is-total {
+            background: $navy-50;
+            border-color: $navy-200;
+        }
+
+        .gk-mobile-card-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+
+            .gk-mobile-card-title { font-size: 14px; font-weight: 700; color: $slate-800; }
+            .gk-mobile-card-amount { font-family: $font-mono; font-size: 16px; font-weight: 800; color: $navy-900; }
+        }
+
+        .gk-mobile-card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+
+            .gk-mobile-field {
+                display: flex;
+                flex-direction: column;
+
+                .gk-mobile-field-label {
+                    font-family: $font-mono;
+                    font-size: 10px;
+                    color: $slate-400;
+                }
+
+                .gk-mobile-field-value {
+                    font-family: $font-mono;
+                    font-size: 11px;
+                    color: $slate-600;
+
+                    &.green { color: $emerald-700; font-weight: 700; }
+                    &.red { color: $red-600; }
+                    &.teal { color: $teal-700; font-weight: 800; }
+                }
+            }
+        }
+    }
+}
+
+// Desktop table hidden < 768px
+.gk-desktop-table {
+    display: block;
+
+    @media (max-width: 767px) { display: none; }
+}
+
+// ---------------------------------------------------------------
+// Heading kecil di dalam body kartu (Top 10 Menu)
+// ---------------------------------------------------------------
+.gk-h4 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: $slate-500;
+    font-family: $font-mono;
+    margin-bottom: 10px;
+}
+
+// ---------------------------------------------------------------
+// FOOTER (mock: navy rounded panel)
+// ---------------------------------------------------------------
+.gk-footer {
+    background: $navy-900;
+    border-radius: $radius-card;
+    padding: 20px 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+
+    .gk-footer-meta {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        .gk-footer-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px 12px;
+
+            .gk-footer-item {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                font-family: $font-mono;
+                font-size: 11px;
+                color: $navy-300;
+            }
+        }
+
+        .gk-footer-sub {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            font-family: $font-mono;
+            font-size: 10px;
+            color: $navy-500;
+
+            b { color: $navy-300; font-weight: 600; }
+
+            .gk-footer-sep { color: $navy-700; }
+        }
+    }
+}
+
+// ---------------------------------------------------------------
+// MODAL (mock: .modal-overlay + kartu putih)
+// ---------------------------------------------------------------
+.gk-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 22, 40, 0.72);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.gk-modal {
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-card;
+    box-shadow: 0 30px 60px rgba(5, 16, 31, 0.4);
+    width: 100%;
+    max-width: 560px;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: gk-scale-in 0.25s ease both;
+
+    .gk-modal-head {
+        position: sticky;
+        top: 0;
+        background: #fff;
+        border-bottom: 1px solid $slate-100;
+        padding: 16px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        z-index: 1;
+
+        h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: $navy-900;
+        }
+    }
+
+    .gk-modal-close {
+        width: 28px;
+        height: 28px;
+        border-radius: $radius-control;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        color: $slate-400;
+        transition: background 0.15s ease, color 0.15s ease;
+
+        &:hover { background: $slate-100; color: $slate-700; }
+    }
+
+    .gk-modal-body {
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .gk-modal-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid $slate-50;
+
+        &:last-child { border-bottom: none; }
+
+        .gk-modal-row-main {
+            flex: 1;
+            min-width: 0;
+
+            .gk-modal-time {
+                font-family: $font-mono;
+                font-size: 11px;
+                color: $slate-400;
+            }
+
+            .gk-modal-action {
+                font-size: 14px;
+                color: $slate-700;
+                margin-top: 2px;
+                line-height: 1.45;
+            }
+        }
+    }
+
+    .gk-modal-foot {
+        text-align: center;
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $slate-300;
+        padding-top: 8px;
+    }
+
+    // --- Konten modal KPI / Arus Kas / PSAK ---
+    .gk-modal-kpi {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid $slate-50;
+
+        &:last-child { border-bottom: none; }
+    }
+
+    .gk-modal-kpi-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: $slate-600;
+        min-width: 0;
+
+        small {
+            display: block;
+            font-family: $font-mono;
+            font-size: 10px;
+            font-weight: 400;
+            color: $slate-400;
+            margin-top: 3px;
+            line-height: 1.5;
+        }
+    }
+
+    .gk-modal-kpi-value {
+        font-family: $font-mono;
+        font-weight: 800;
+        font-size: 15px;
+        color: $navy-900;
+        text-align: right;
+        white-space: nowrap;
+
+        &.pos { color: $emerald-600; }
+        &.neg { color: $red-600; }
+
+        small {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            margin-top: 3px;
+            color: $slate-400;
+
+            &.up { color: $emerald-600; }
+            &.down { color: $red-500; }
+        }
+    }
+
+    .gk-modal-group {
+        display: flex;
+        flex-direction: column;
+
+        & + .gk-modal-group {
+            margin-top: 10px;
+            padding-top: 6px;
+        }
+    }
+
+    .gk-modal-group-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding-bottom: 6px;
+        border-bottom: 1px dashed $slate-200;
+    }
+
+    .gk-modal-group-total {
+        font-family: $font-mono;
+        font-size: 12px;
+        font-weight: 700;
+        color: $navy-900;
+
+        &.pos { color: $emerald-600; }
+        &.neg { color: $red-600; }
+    }
+}
+
+// ---------------------------------------------------------------
+// STATE — loading / empty / error
+// ---------------------------------------------------------------
+.gk-loading,
+.gk-empty,
+.gk-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 64px 24px;
+    text-align: center;
+    border-radius: $radius-card;
+    background: #fff;
+    border: 1px solid $slate-200;
+
+    i { font-size: 26px; }
+
+    p { margin: 0; color: $slate-500; font-size: 14px; max-width: 520px; }
+}
+
+.gk-loading {
+    i { color: $teal-600; }
+}
+
+.gk-empty {
+    i { color: $slate-300; }
+
+    b { color: $navy-900; }
+
+    .gk-empty-hint {
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-400;
+    }
+}
+
+.gk-error {
+    border-color: $red-100;
+
+    i { color: $red-600; }
+
+    p { color: $navy-900; }
+}
+
+// ---------------------------------------------------------------
+// FILTER: month picker & range picker (dipakai topnav + report header)
+// ---------------------------------------------------------------
+.gk-month-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: $radius-control;
+    padding: 3px 6px;
+
+    .gk-month-btn {
+        width: 24px;
+        height: 24px;
+        border-radius: 6px;
+        color: $slate-500;
+        font-size: 15px;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease, color 0.15s ease;
+
+        &:hover { background: $slate-100; color: $teal-700; }
+    }
+
+    .gk-month-label {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 0 8px;
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-700;
+        white-space: nowrap;
+
+        i { color: $teal-600; font-size: 12px; }
+    }
+}
+
+// Versi terang (di atas kanvas putih — report shell)
+.gk-main .gk-month-picker {
+    background: #fff;
+    border-color: $slate-200;
+
+    .gk-month-btn {
+        color: $slate-500;
+        &:hover { background: $slate-100; color: $navy-700; }
+    }
+
+    .gk-month-label {
+        color: $slate-700;
+        i { color: $teal-600; }
+    }
+}
+
+.gk-range-toggle { align-self: center; }
+
 .gk-range-picker {
     display: flex;
     align-items: center;
     gap: 6px;
-    background: $surface-card;
-    border: 1px solid $border-hairline;
-    border-radius: $radius-control;
-    padding: 6px 10px;
-    box-shadow: $card-shadow;
 }
 
 .gk-range-input {
-    border: 1px solid $border-hairline;
-    border-radius: $radius-control;
+    border: 1px solid $slate-200;
+    border-radius: 8px;
     padding: 6px 10px;
-    font-size: 13px;
-    font-family: inherit;
-    color: $text-primary;
+    font-size: 12px;
+    font-family: $font-mono;
+    color: $slate-800;
     background: #fff;
 
     &:focus {
         outline: none;
-        border-color: $brand;
-        box-shadow: 0 0 0 3px $brand-tint;
+        border-color: $teal-600;
+        box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
     }
 }
 
 .gk-range-sep {
-    color: $text-secondary;
+    color: $slate-400;
     font-weight: 600;
-    padding: 0 2px;
 }
 
 .gk-range-presets {
@@ -395,840 +2381,365 @@ $font-stack: 'Inter', -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial
 }
 
 .gk-range-chip {
-    border: 1px solid $border-hairline;
-    background: $surface-card;
+    border: 1px solid $slate-200;
+    background: #fff;
     border-radius: 999px;
     padding: 5px 12px;
-    font-size: 12px;
+    font-size: 11px;
+    font-family: $font-mono;
     font-weight: 500;
-    color: $text-primary;
-    cursor: pointer;
-    transition: background 0.12s ease, border-color 0.12s ease;
+    color: $slate-600;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
 
-    &:hover { background: $hover-wash; }
+    &:hover { background: $slate-50; }
 
     &.active {
-        background: $brand-tint;
-        border-color: $brand;
-        color: $brand;
-        font-weight: 600;
+        background: $teal-50;
+        border-color: $teal-600;
+        color: $teal-700;
+        font-weight: 700;
     }
 }
 
+.gk-range-back { color: $slate-500; }
+
 .gk-range-error {
-    margin: 0 0 12px;
-    padding: 10px 14px;
-    border: 1px solid rgba(214, 69, 69, 0.25);
-    background: rgba(214, 69, 69, 0.06);
-    color: $negative;
-    border-radius: $radius-card;
-    font-size: 13px;
-
-    i { margin-right: 6px; }
-}
-
-// Legacy month picker — dipertahankan untuk report_shell, tidak lagi dipakai dashboard header
-.gk-month-picker {
     display: flex;
     align-items: center;
-    background: $surface-card;
-    border: 1px solid $border-hairline;
-    border-radius: $radius-control;
-    padding: 6px 12px;
-    gap: 4px;
-    box-shadow: $card-shadow;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px solid $red-100;
+    background: $red-50;
+    color: $red-700;
+    border-radius: 12px;
+    font-size: 13px;
 }
 
-.gk-month-label {
-    padding: 0 10px;
-    font-weight: 600;
-    color: $text-primary;
-    font-size: 13.5px;
-    white-space: nowrap;
-    min-width: 128px;
-    text-align: center;
-
-    i { color: $text-secondary; margin-right: 6px; }
+.gk-range-hint {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: 1px solid $slate-200;
+    background: $slate-50;
+    color: $slate-500;
+    border-radius: 12px;
+    font-size: 12px;
 }
 
-.gk-month-btn {
-    border: none;
-    background: transparent;
-    font-size: 18px;
-    line-height: 1;
-    cursor: pointer;
-    padding: 4px 8px;
-    color: $text-secondary;
-    border-radius: $radius-control;
+// Kontrol rentang di topnav memakai varian terang bawaan (.gk-range-input).
+// Blok "varian gelap" dihapus bersama navy topnav.
 
-    &:hover { background: $hover-wash; color: $text-primary; }
-}
-
-// ---------------------------------------------------------------
-// OUTLET FILTER DROPDOWN (Global Filter #1)
-// Tampil di header; state.outletMenuOpen toggle via OWL.
-// ---------------------------------------------------------------
+// Filter outlet (di topnav & report header)
 .gk-outlet-filter {
     position: relative;
+
+    &.open { z-index: 60; }
 }
 
 .gk-outlet-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    background: $surface-card;
-    border: 1px solid $border-hairline;
+    gap: 6px;
+    background: $navy-800;
+    border: 1px solid $navy-700;
     border-radius: $radius-control;
     padding: 6px 12px;
-    font-weight: 600;
-    color: $text-primary;
-    cursor: pointer;
-    box-shadow: $card-shadow;
-    font-size: 13.5px;
-    font-family: inherit;
-    max-width: 220px;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
-
-    > i:first-child { color: $text-secondary; }
-
-    &:hover { border-color: #D3D9E0; }
-
-    &.open {
-        border-color: $brand;
-        box-shadow: 0 0 0 3px $brand-tint;
-    }
-}
-
-.gk-outlet-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 160px;
-}
-
-.gk-outlet-caret {
+    font-family: $font-mono;
     font-size: 11px;
-    color: $text-secondary;
-    transition: transform 0.15s ease;
+    color: $navy-200;
+    transition: border-color 0.15s ease, color 0.15s ease;
 
-    .gk-outlet-btn.open & { transform: rotate(180deg); }
+    i.fa-map-marker { color: $teal-400; font-size: 12px; }
+
+    &:hover { border-color: $teal-600; color: $teal-400; }
+    &.open { border-color: $teal-600; color: $teal-400; }
 }
+
+.gk-outlet-caret { opacity: 0.6; font-size: 10px; margin-left: 2px; }
 
 .gk-outlet-menu {
     position: absolute;
-    top: calc(100% + 8px);
-    right: 0;
-    min-width: 220px;
-    background: $surface-card;
-    border: 1px solid $border-hairline;
-    border-radius: $radius-card;
-    box-shadow: 0 8px 24px rgba(16, 24, 40, 0.12);
-    padding: 6px;
-    z-index: 50;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 180px;
+    background: #fff;
+    border: 1px solid $slate-200;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 16px 40px rgba(9, 22, 40, 0.18);
+    z-index: 60;
+    animation: gk-scale-in 0.18s ease both;
 }
 
 .gk-outlet-option {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 9px 12px;
-    border: none;
-    background: transparent;
-    border-radius: $radius-control;
-    font-size: 13.5px;
-    color: $text-primary;
-    cursor: pointer;
+    gap: 8px;
+    width: 100%;
     text-align: left;
-    font-family: inherit;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: $slate-600;
+    transition: background 0.12s ease;
 
-    &:hover { background: $hover-wash; }
+    i { font-size: 11px; color: $slate-400; }
+
+    &:hover { background: $slate-50; }
 
     &.active {
-        background: $brand-tint;
-        color: $brand;
+        color: $teal-700;
         font-weight: 600;
+
+        i { color: $teal-600; }
     }
 }
 
-.gk-outlet-bullet {
-    font-size: 8px;
-    color: $text-secondary;
+.gk-outlet-bullet { opacity: 0.5; }
+
+// Versi terang untuk header di dalam main (report shell)
+.gk-main .gk-outlet-btn {
+    background: #fff;
+    border-color: $slate-200;
+    color: $slate-700;
+
+    i.fa-map-marker { color: $teal-600; }
+
+    &:hover,
+    &.open { border-color: $teal-600; color: $teal-700; }
 }
 
-// CTA solid (PDF) + ghost (Excel) — header baru pakai 2 tombol
-.gk-btn-export {
-    background: $positive;
-    color: #fff;
-    border: none;
-    border-radius: $radius-card;
-    padding: 9px 16px;
-    font-weight: 600;
-    font-size: 13.5px;
-    font-family: inherit;
-    cursor: pointer;
-    box-shadow: 0 1px 2px rgba(30, 142, 90, 0.35);
-    transition: background 0.15s ease;
+// A1: laporan akuntansi konsolidasi — penanda statis (filter outlet tidak berlaku)
+.gk-outlet-consolidated {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1px dashed $slate-300;
+    border-radius: $radius-control;
+    padding: 6px 12px;
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $slate-500;
+    cursor: help;
 
-    &:hover { background: #187A4D; }
-
-    i { margin-right: 7px; }
+    i.fa-map-marker { color: $slate-400; font-size: 12px; }
 }
 
-.gk-btn-ghost {
-    background: $surface-card;
-    border: 1px solid $border-hairline;
-    color: $text-primary;
-    box-shadow: $card-shadow;
+// ---------------------------------------------------------------
+// MOBILE FILTER STRIP (mock: chip periode + outlet < md)
+// ---------------------------------------------------------------
+.gk-mobile-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
 
-    &:hover { background: $hover-wash; }
+    @media (min-width: 768px) { display: none; }
+
+    .gk-mobile-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+        background: #fff;
+        border: 1px solid $slate-200;
+        border-radius: 12px;
+        padding: 8px 12px;
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-600;
+        box-shadow: $card-shadow;
+        white-space: nowrap;
+
+        i { color: $teal-500; font-size: 11px; }
+
+        &.is-active {
+            background: $navy-900;
+            border-color: $navy-900;
+            color: #fff;
+        }
+    }
 }
 
-// SPEC_OVERHAUL F0: toggle button "Rentang Kustom" di mode month
-.gk-range-toggle {
-    padding: 7px 12px;
-    font-size: 12.5px;
-    font-weight: 500;
+// ---------------------------------------------------------------
+// SMALL UTILITIES
+// ---------------------------------------------------------------
+.gk-muted {
+    font-family: $font-mono;
+    font-size: 11px;
+    color: $slate-400;
 
-    i { margin-right: 6px; }
+    &.small { font-size: 10px; }
+    &.light { color: rgba(255, 255, 255, 0.7); }
 }
 
-// SPEC_OVERHAUL F1: tombol "View audit trail" di akhir Beranda
+// ---------------------------------------------------------------
+// F2 (audit GUI 26 Sep) — banner cakupan filter outlet
+// ---------------------------------------------------------------
+.gk-outlet-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid $amber-100;
+    background: $amber-50;
+    color: $amber-800;
+
+    &.is-filtered {
+        border-color: $emerald-100;
+        background: $emerald-50;
+        color: $emerald-800;
+    }
+
+    .gk-outlet-notice-icon {
+        margin-top: 2px;
+        color: $amber-600;
+        flex: 0 0 auto;
+    }
+
+    &.is-filtered .gk-outlet-notice-icon { color: $emerald-600; }
+
+    .gk-outlet-notice-body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .gk-outlet-notice-title {
+        font-family: $font-mono;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+    }
+
+    .gk-outlet-notice-text {
+        font-size: 12px;
+        line-height: 1.55;
+        color: $slate-600;
+
+        b {
+            color: $slate-800;
+            font-weight: 700;
+        }
+    }
+}
+
+.gk-neg { color: $red-600 !important; }
+.gk-mono { font-family: $font-mono; }
+.gk-hidden-mobile {
+    @media (max-width: 639px) { display: none !important; }
+}
+
 .gk-audit-trail-wrap {
     display: flex;
     justify-content: center;
     margin: 12px 0 4px;
 }
 
-.gk-audit-trail-btn {
-    padding: 9px 18px;
-    font-size: 13.5px;
-    background: $surface-card;
-    border: 1px solid $border-hairline;
-    color: $brand;
-    box-shadow: $card-shadow;
+// --- Utilitas shell laporan (dipakai report_shell.xml) ---
+.gk-nav-group { padding-top: 16px; }
 
-    &:hover {
-        background: $brand-tint;
-        border-color: $brand;
-        color: $brand;
-    }
+.gk-outlet-label { white-space: nowrap; }
 
-    i { margin-right: 8px; }
+// =====================================================================
+// FASE 5 — POLISH RESPONSIVE / TABULAR / TOOLTIP / A11Y
+// =====================================================================
+
+// --- 1. Angka tabular ---
+// Font mono sudah monospaced, tapi tabular-nums eksplisit menjaga lebar digit
+// stabil saat data di-reload atau font fallback dipakai (angka tidak "geser").
+.gk-kpi-value,
+.gk-kpi-sub,
+.gk-kpi-delta,
+.gk-list-value,
+.gk-list-total-value,
+.gk-cash-amount,
+.gk-bar-value,
+.gk-channel-value,
+.gk-mobile-card-amount,
+.gk-mobile-field-value {
+    font-variant-numeric: tabular-nums;
 }
 
-// ---------------------------------------------------------------
-// CARDS & GRID
-// Elevasi tipis + radius 8px + jarak antar kartu 16px (spec §2 Layout)
-// ---------------------------------------------------------------
-.gk-card {
-    background: $surface-card;
-    border: 1px solid $border-hairline;
-    border-radius: $radius-card;
-    padding: 22px 24px;
-    box-shadow: $card-shadow;
-    margin-bottom: 16px;
-}
-
-.gk-grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-
-    .gk-card { margin-bottom: 0; }
-
-    @media (max-width: 1100px) { grid-template-columns: 1fr; }
-}
-
-.gk-card-head {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
-    margin-bottom: 16px;
-
-    h3 {
-        margin: 0;
-        font-size: 15px;
-        font-weight: 600;
-        color: $text-primary;
-    }
-}
-
-// Sub-header list: sentence case (bukan uppercase — spec §2 Tipografi)
-.gk-h4 {
-    font-size: 12.5px;
-    font-weight: 600;
-    color: $text-secondary;
-    margin: 0 0 10px;
-}
-
-.gk-muted { color: $text-secondary; }
-.gk-muted.small { font-size: 11.5px; }
-.gk-strong { font-weight: 600; color: $text-primary; }
-.gk-strong.big { font-size: 20px; }
-
-// ---------------------------------------------------------------
-// OVERHAUL 15 Sep (K1): HERO BAND + GAUGE dihapus — Laba Bersih kini
-// tampil sebagai KPI ke-5 di row atas (match referensi ChatGPT PSAK).
-// ---------------------------------------------------------------
-// KPI CARDS (Ringkasan Eksekutif)
-// ---------------------------------------------------------------
-.gk-kpi-row {
-    display: grid;
-    // OVERHAUL 15 Sep: Beranda pakai modifier --5 (5 KPI polos); tab lain
-    // 3-4 kartu inline style / modifier .two — jumlah kartu harus selalu
-    // sama dgn kolom grid, kalau ada gap kosong di kanan.
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 16px;
-
-    &.two { grid-template-columns: repeat(2, 1fr); }
-
-    .gk-card { margin-bottom: 0; }
-
-    @media (max-width: 1200px) { grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: 700px) {
-        grid-template-columns: 1fr;
-    }
-}
-
-// ---------------------------------------------------------------
-// OVERHAUL 15 Sep (K1): gauge "Status Keuangan" (F-UI.3) dihapus
-// bersama hero band.
-// ---------------------------------------------------------------
-
-.gk-kpi {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    &.teal {
-        background: linear-gradient(135deg, $brand, $brand-dark);
-        border: none;
-        color: #fff;
-
-        .gk-kpi-value, .gk-kpi-label.light { color: #fff; }
-        .gk-muted.light { color: rgba(255, 255, 255, 0.75); }
-    }
-}
-
-// Label KPI: sentence case, 12px/500, secondary (spec §2 Tipografi)
-.gk-kpi-label {
+// --- 2. Skip link (fokus pertama keyboard melompat ke konten) ---
+.gk-skip-link {
+    position: absolute;
+    top: -48px;
+    left: 8px;
+    z-index: 1100;
+    background: $navy-900;
+    color: #fff;
     font-size: 12px;
-    font-weight: 500;
-    color: $text-secondary;
-}
-
-.gk-kpi-value {
-    font-size: 30px;
     font-weight: 600;
-    color: $text-primary;
-    letter-spacing: -0.01em;
-    font-feature-settings: "tnum";  // angka tabular — angka sejajar antar kartu
+    padding: 10px 16px;
+    border-radius: 0 0 12px 12px;
+    transition: top 0.15s ease;
 
-    &.neg { color: $negative; }
+    &:focus { top: 0; }
 }
 
-.gk-kpi-foot {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 12.5px;
-    color: $text-secondary;
+// --- 3. Fokus keyboard yang terlihat ---
+// Tanpa ini, navigasi keyboard di dalam dashboard tidak punya penanda posisi.
+.gk-dash :focus-visible {
+    outline: 2px solid $teal-500;
+    outline-offset: 2px;
 }
 
-// Baris bawah KPI: indikator kiri, sparkline di pojok kanan bawah (spec §3)
-.gk-kpi-foot-row {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 8px;
-    margin-top: 4px;
-
-    .gk-kpi-foot { min-width: 0; }
-}
-
-.gk-kpi-spark {
-    width: 58px;
-    height: 26px;
-    flex-shrink: 0;
-    opacity: 0.9;
-
-    canvas { display: block; width: 100%; height: 100%; }
-}
-
-// Indikator arah: panah + persen, warna status (tanpa badge pill —
-// warna status hanya membawa makna arah, spec §2 prinsip)
-.gk-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    padding: 0;
-    border-radius: 4px;
-    font-size: 12.5px;
-    font-weight: 600;
-
-    &.up { color: $positive; }
-    &.down { color: $negative; }
-}
-
-// ---------------------------------------------------------------
-// CHARTS
-// ---------------------------------------------------------------
-.gk-chart-card { padding-bottom: 16px; }
-
-.gk-legend-dot {
-    font-size: 12.5px;
-    color: $text-secondary;
-
-    b { color: $text-primary; }
-}
-
-.gk-chart-box {
-    position: relative;
-    height: 300px;
-
-    &.square { height: 230px; width: 230px; }
-}
-
-.gk-channel-wrap {
-    display: flex;
-    align-items: center;
-    gap: 28px;
-    flex-wrap: wrap;
-}
-
-.gk-channel-legend {
-    flex: 1;
-    min-width: 240px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.gk-channel-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-size: 13.5px;
-
-    .gk-channel-name { flex: 1; font-weight: 600; color: $text-primary; }
-}
-
-.gk-legend-color {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-// ---------------------------------------------------------------
-// OUTLET CARDS (Tab 1)
-// ---------------------------------------------------------------
-.gk-outlet-card {
-    hr {
-        border: none;
-        border-top: 1px solid $border-hairline;
-        margin: 16px 0;
-    }
-}
-
-.gk-outlet-head {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.gk-outlet-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: $radius-card;
-    background: $brand-tint;
-    color: $brand;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 17px;
-}
-
-.gk-outlet-name {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-
-    b { color: $text-primary; font-size: 15px; }
-}
-
-.gk-outlet-stats {
-    display: flex;
-    gap: 48px;
-    margin-top: 10px;
-
-    .gk-muted { font-size: 12px; }
-}
-
-// ---------------------------------------------------------------
-// EXPENSE BARS / PAYMENT BARS (Tab 2 & 3)
-// ---------------------------------------------------------------
-.gk-expense-list {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.gk-expense-row {
-    border-radius: $radius-control;
-    margin: 0 -8px;
-    padding: 4px 8px;
-    transition: background 0.12s ease;
-
-    // Hover state — terasa interaktif meski belum ada aksi klik (spec §3)
-    &:hover { background: $bg-canvas; }
-
-    .gk-expense-label {
-        display: flex;
-        justify-content: space-between;
-        font-size: 13.5px;
-        margin-bottom: 6px;
-
-        b { color: $text-primary; font-weight: 600; }
-    }
-
-    // Klaster kanan: nominal + "· x,x%" dari total (spec §3 Breakdown)
-    .gk-expense-right {
-        display: inline-flex;
-        align-items: baseline;
-        gap: 6px;
-        white-space: nowrap;
-    }
-
-    .gk-pct {
-        font-size: 12.5px;
-        font-weight: 500;
-        color: $text-secondary;
-        font-feature-settings: "tnum";
-    }
-}
-
-.gk-bar-track {
-    height: 8px;
-    background: $track;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.gk-bar-fill {
-    height: 100%;
-    border-radius: 2px;
-    background: $brand;   // gradasi per kategori menyusul di Stage 3
-    min-width: 4px;
-}
-
-.gk-expense-total {
-    display: flex;
-    justify-content: space-between;
-    border-top: 1px solid $border-hairline;
-    margin-top: 16px;
-    padding-top: 14px;
-    font-size: 14px;
-
-    span { color: $text-secondary; }
-    b { color: $text-primary; font-size: 16px; font-weight: 600; }
-}
-
-// ---------------------------------------------------------------
-// CASH & BANK (Tab 2) — F-UI.1: grid card pastel ala FinanceFlow
-// "Daftar Akun" (foto 03): ikon + nama+tipe, nominal besar, progress
-// bar "Porsi dari Total". Background per card di-set inline dari
-// cashCardColor() (turunan CHART_COLORS alpha 10%); aksen solid di
-// border kiri & bar. Tanpa tombol aksi (read-only).
-// ---------------------------------------------------------------
-.gk-cash-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-
-    @media (max-width: 1400px) { grid-template-columns: repeat(2, 1fr); }
-    @media (max-width: 720px) { grid-template-columns: 1fr; }
-}
-
-.gk-cash-card {
-    border-radius: $radius-card;
-    padding: 14px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;   // izinkan nominal panjang ellipsis, jangan pecah grid
-}
-
-.gk-cash-card-top {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-}
-
-.gk-cash-amount {
-    font-size: 20px;
-    font-weight: 700;
-    color: $text-primary;
-    letter-spacing: -0.01em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.gk-cash-pct-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 11.5px;
-
-    .gk-muted { font-size: 11.5px; }
-}
-
-// Legacy list style — dipertahankan bila dipakai tempat lain; tidak lagi
-// dirender oleh Tab 2 sejak F-UI.1.
-
-.gk-cash-ico {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    flex-shrink: 0;
-
-    &.kas { background: rgba(232, 163, 61, 0.15); color: #B45309; }
-    &.bank { background: rgba(59, 111, 224, 0.12); color: $accent-blue; }
-    &.ewallet { background: $brand-tint; color: $brand; }
-}
-
-.gk-cash-name {
-    display: flex;
-    flex-direction: column;
-
-    b { color: $text-primary; font-size: 13.5px; }
-}
-
-// ---------------------------------------------------------------
-// BALANCE / CASHFLOW (Tab 2)
-// ---------------------------------------------------------------
-.gk-balance-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
-
-    .neg .gk-strong { color: $negative; }
-
-    @media (max-width: 900px) { grid-template-columns: 1fr; }
-}
-
-.gk-cashflow {
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-}
-
-.gk-cashflow-item {
-    flex: 1;
-    min-width: 140px;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    background: $panel-wash;
-    border: 1px solid $border-hairline;
-    border-radius: $radius-card;
-    padding: 14px 16px;
-
-    i {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: $track;
-        color: $text-secondary;
-    }
-
-    &.in i { background: rgba(30, 142, 90, 0.12); color: $positive; }
-    &.out i { background: rgba(214, 69, 69, 0.12); color: $negative; }
-
-    b { color: $text-primary; }
-}
-
-// ---------------------------------------------------------------
-// TABLES
-// ---------------------------------------------------------------
-.gk-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13.5px;
-
-    th {
-        text-align: left;
-        font-size: 12px;
-        // sentence case — bukan uppercase (spec §2 Tipografi)
-        color: $text-secondary;
-        font-weight: 600;
-        padding: 8px 10px;
-        border-bottom: 1px solid $border-hairline;
-    }
-
-    td {
-        padding: 10px;
-        border-bottom: 1px solid $divider-soft;
-        color: $text-primary;
-    }
-
-    tr:last-child td { border-bottom: none; }
-
-    .right { text-align: right; }
-    .green { color: $positive; font-weight: 600; }
-    .gk-muted { font-size: 12px; }
-
-    .gk-total-row td {
-        border-top: 1px solid $border-hairline;
-        background: $panel-wash;
-    }
-}
-
-// ---------------------------------------------------------------
-// RESPONSIVE & PRINT
-// ---------------------------------------------------------------
-// Di layar kecil sidebar jadi bar atas, konten tetap scroll di .gk-main
-@media (max-width: 768px) {
-    .gk-dash { flex-direction: column; height: 100%; }
-
-    .gk-sidebar {
-        width: 100%;
-        height: auto;
-        max-height: 45vh;
-        border-right: none;
-        border-bottom: 1px solid $border-hairline;
-        flex-direction: column;
-        overflow-y: auto;
-    }
-
-    .gk-sidebar-bottom { margin-top: 16px; }
-}
-
-// ---------------------------------------------------------------
-// MOBILE KPI REFINEMENTS (Redesign PowerBI — Stage 6)
-// KPI 1 kolom di layar sempit: nilai lebih kecil, foot-row tidak wrap
-// kasar, sparkline tetap anchor kanan-bawah, jarak antar kartu rapat
-// tapi tetap lega. Hero value menyusut & gauge pindah baris penuh.
-// ---------------------------------------------------------------
-@media (max-width: 700px) {
+// --- 4. Responsive: rapatkan ritme di layar kecil ---
+@media (max-width: 639px) {
     .gk-main {
-        padding: 20px 16px 32px;
+        padding: 20px 12px;
+        gap: 20px;
     }
 
-    .gk-card {
-        padding: 18px 16px;
-    }
+    .gk-grid-2,
+    .gk-grid-3,
+    .gk-grid-4 { gap: 16px; }
 
-    .gk-kpi-row {
-        gap: 12px;
-        margin-bottom: 12px;
-    }
-
-    .gk-kpi-value {
-        font-size: 24px;
-    }
-
-    // Hero band dihapus (OVERHAUL 15 Sep) — tidak ada rule hero di mobile.
-
-    .gk-kpi-foot-row {
-        align-items: center;
-
-        .gk-kpi-foot {
+    .gk-section {
+        .gk-section-head {
+            padding: 14px 16px;
             flex-wrap: wrap;
-            row-gap: 2px;
+            gap: 8px;
         }
+
+        .gk-section-body { padding: 16px; }
     }
 
-    .gk-kpi-spark {
-        width: 48px;
-        height: 22px;
+    .gk-kpi {
+        min-width: 160px;
+        padding: 16px;
     }
 
-    .gk-strong.big { font-size: 18px; }
+    // Chart tinggi tetap bikin scroll panjang di ponsel — dipangkas.
+    .gk-chart-box {
+        height: 240px;
 
-    .gk-title { font-size: 19px; }
-
-    // Aksi header (picker + outlet + ekspor) boleh wrap jadi 2 baris
-    .gk-header-actions {
-        width: 100%;
-        flex-wrap: wrap;
+        &.h-260 { height: 220px; }
+        &.h-220 { height: 200px; }
+        &.h-190 { height: 180px; }
+        &.square { height: 180px; width: 180px; }
     }
 
-    // Donut tidak melimpah di layar sempit
-    .gk-chart-box.square { width: 200px; height: 200px; }
+    .gk-modal-body { padding: 16px; }
 }
 
-// ---------------------------------------------------------------
-// F1 BERANDA — grid 5 KPI polos + stat mini (OVERHAUL 15 Sep: icon
-// circle & accent dihapus; .gk-kpi-icon tetap ada untuk widget
-// Kas/Bank/Settlement; .gk-kpsak-* dihapus per keputusan user)
-// ---------------------------------------------------------------
-.gk-kpi-row--5 {
-    grid-template-columns: repeat(5, 1fr);
-    @media (max-width: 1200px) { grid-template-columns: repeat(3, 1fr); }
-    @media (max-width: 800px) { grid-template-columns: 1fr; }
-}
-.gk-kpi-icon {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 14px; flex-shrink: 0;
-    &.teal { background: rgba(15,124,108,0.12); color: $brand; }
-    &.amber { background: rgba(232,163,61,0.16); color: #B45309; }
-    &.blue { background: rgba(59,111,224,0.12); color: $accent-blue; }
-    &.purple { background: rgba(139,92,246,0.12); color: #7C3AED; }
-    &.red { background: rgba(214,69,69,0.12); color: $negative; }
-}
-.gk-grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 16px;
-    @media (max-width: 1000px) { grid-template-columns: 1fr; }
-}
-.gk-stat-mini {
-    display: flex; flex-direction: column; gap: 8px;
-    .gk-stat-mini-head { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; }
-    .gk-stat-mini-value { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
-}
+// --- 5. Gulir tabel yang mulus di perangkat sentuh ---
+.gk-table-wrap { -webkit-overflow-scrolling: touch; }
 
-
-// window.print() (tombol Ekspor PDF): lepas height/overflow supaya
-// seluruh konten ikut tercetak, bukan hanya layar pertama.
-@media print {
-    .o_web_client,
-    .o_action_manager,
-    .o_action,
-    .gk-dash,
-    .gk-main {
-        height: auto !important;
-        overflow: visible !important;
+// --- 6. Hormati preferensi "kurangi animasi" ---
+@media (prefers-reduced-motion: reduce) {
+    .gk-dash *,
+    .gk-dash *::before,
+    .gk-dash *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
     }
-    .gk-sidebar { display: none; }
 }
-
-// ---------------------------------------------------------------
-// STATES
-// ---------------------------------------------------------------
-.gk-loading, .gk-empty {
-    padding: 80px 40px;
-    text-align: center;
-    color: $text-secondary;
-
-    i { color: #C6CBD4; }
-}
-
-.gk-empty-hint { font-size: 12.5px; margin-top: 4px; }

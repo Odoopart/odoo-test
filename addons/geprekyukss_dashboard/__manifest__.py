@@ -13,13 +13,16 @@ laporan statis.
     "license": "LGPL-3",
     "depends": [
         "geprekyukss_pos",
+        "geprekyukss_pbjt",
         "stock",
         "account_asset_management",
+        "mis_builder_cash_flow",
     ],
     "data": [
         "views/menus.xml",
         "data/mis_report_pl.xml",
         "data/mis_report_bs.xml",
+        "data/mis_report_cf_labels.xml",
     ],
     "assets": {
         "web.assets_backend": [

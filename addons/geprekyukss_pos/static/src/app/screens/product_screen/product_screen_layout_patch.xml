@@ -1,20 +1,55 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
     <!--
-        Header "PESANAN" + tombol "Bersihkan" sebelum OrderSummary,
-        row "Tambah Catatan" setelah OrderSummary, dan sembunyikan Numpad
-        bawaan (qty diedit via stepper inline per item, bukan numpad).
+        Tata letak panel PESANAN (ProductScreen, Odoo 19):
+          - <MemberCard/>            ← kartu member (komponen kita)
+          - header "Order #<kode>" + pill status + tombol "Bersihkan" (ikon)
+          - <OrderSummary>           ← bawaan Odoo (daftar orderline + total)
+          - baris "Tambah Catatan"
+          - Numpad dimatikan (qty diedit lewat stepper inline per item)
+
+        Catatan titik sisip:
+          `//OrderSummary` adalah elemen BIASA di dalam `.leftpane` (bukan akar
+          template), jadi sebelum/sesudahnya aman. Mengincar akar template dengan
+          position="before" tidak akan berpengaruh di Odoo 19: di dalam DOM, elemen
+          akar tidak punya parentElement sehingga `target.before()` jadi no-op.
+
+        `MemberCard` didaftarkan ke ProductScreen.components di
+        `overrides/models/models.js`.
+
+        Berkas ini juga memuat tambalan untuk `point_of_sale.OrderDisplay` (baris
+        "Diskon" di ringkasan). Dijadikan SATU berkas dengan ProductScreen, bukan
+        berkas baru, karena menambah berkas berarti mengubah `__manifest__.py` —
+        dan perubahan manifest tidak terbaca proses Odoo yang sedang jalan
+        (daftar berkas bundel dibekukan `lru_cache`). Satu berkas = perubahan
+        terlihat tanpa restart.
     -->
     <t t-inherit="point_of_sale.ProductScreen" t-inherit-mode="extension">
         <xpath expr="//OrderSummary" position="before">
-            <div class="gy-order-header d-flex justify-content-between align-items-center px-2 pt-2">
-                <div class="gy-order-title fw-bold">
-                    <i class="fa fa-shopping-bag me-2" role="img" aria-label="Pesanan"/>PESANAN
+            <MemberCard/>
+            <!--
+                HEADER PANEL (Fase 4). Sebelumnya "PESANAN" statis; pos2 menulis
+                "Order #A2" + pill status (Dine In) + garis pemisah.
+
+                Kode order datang dari `gyOrderCode` (models.js) yang memakai
+                `floatingOrderName` milik Odoo (`tracking_number`, mis. "114") —
+                bukan `name` yang panjang ("Restoran Mallengkeri - 034114").
+                Pill diambil dari preset order dan KOSONG kalau preset tidak ada,
+                supaya tidak menulis "Dine In" pada order take away.
+
+                Tombol Bersihkan tetap ada tetapi jadi ikon redup saja — board
+                memang hanya menggambar satu tombol kecil di kanan header.
+            -->
+            <div class="gy-order-header d-flex align-items-center gap-2">
+                <div class="gy-order-title">
+                    Order #<t t-esc="this.gyOrderCode"/>
                 </div>
-                <button class="gy-clear-btn btn btn-sm"
+                <span t-if="this.gyOrderMode" class="gy-order-mode" t-esc="this.gyOrderMode"/>
+                <button class="gy-clear-btn btn btn-sm ms-auto"
+                        t-att-title="'Bersihkan order'"
                         t-on-click="() => this.gyClearOrder()"
                         t-att-disabled="!currentOrder or currentOrder.isEmpty()">
-                    <i class="fa fa-trash me-1" role="img" aria-label="Bersihkan"/>Bersihkan
+                    <i class="fa fa-trash" role="img" aria-label="Bersihkan"/>
                 </button>
             </div>
         </xpath>
@@ -28,6 +63,45 @@
         </xpath>
         <xpath expr="//Numpad" position="attributes">
             <attribute name="t-if">false</attribute>
+        </xpath>
+    </t>
+
+    <!--
+        BARIS DISKON di ringkasan (Fase 4).
+
+        Board menulis baris "Diskon"; di Odoo baris itu TIDAK ada, dan menulis
+        "Diskon 0" seperti board akan sia-sia (board-nya statis). Jadi baris ini
+        hanya dirender kalau memang ada diskon, dan angkanya diambil dari
+        `order.getTotalDiscount()` — metode MILIK ODOO (pos_order.js:532), bukan
+        hitungan sendiri. Ini juga cara struk Odoo menampilkannya
+        (order_receipt.xml:70: t-set="totalDiscount" + t-if="totalDiscount"), jadi
+        panel dan struk memakai angka yang sama.
+
+        JANGAN memakai `order.prices.taxDetails.discount_amount`: field itu TIDAK
+        ADA di ringkasan tingkat order. `discount_amount` dipasang PER BARIS di
+        `prices.baseLineByLineUuids[uuid].tax_details`
+        (pos_order_accounting.js `_constructPriceData()`), sehingga t-if yang
+        menunjuk ringkasan order selalu bernilai kosong dan barisnya diam-diam
+        TIDAK PERNAH muncul — terukur: diskon 10% diterapkan (total 33.000 ->
+        32.200) tetapi barisnya tetap tidak ada.
+
+        Ditaruh di dalam blok `.order-summary`, yang di order_display.xml sudah
+        dijaga `t-if="props.mode !== 'receipt'"` — jadi struk tidak ikut berubah.
+        Subtotal & Pajak TIDAK disentuh: keduanya sudah milik Odoo dan muncul
+        hanya saat konfigurasinya memang memakainya.
+
+        Catatan: template ini juga dipakai struk (`mode="receipt"`), tapi karena
+        xpath-nya hanya menyasar baris total di dalam `.order-summary`, dan blok
+        itu memang tidak pernah dirender untuk struk, amannya sudah bawaan.
+    -->
+    <t t-inherit="point_of_sale.OrderDisplay" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('order-summary')]/div[hasclass('fs-3')]" position="before">
+            <t t-set="gyDiscount" t-value="order.getTotalDiscount()"/>
+            <div t-if="gyDiscount"
+                 class="gy-summary-discount d-flex justify-content-between w-100">
+                <span>Diskon</span>
+                <span t-esc="this.env.utils.formatCurrency(gyDiscount)"/>
+            </div>
         </xpath>
     </t>
 </templates>

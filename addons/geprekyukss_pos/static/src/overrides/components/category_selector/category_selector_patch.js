@@ -14,6 +14,16 @@ patch(CategorySelector.prototype, {
                     ? `/web/image?model=pos.category&field=pos_category_icon_image&id=${category.id}`
                     : null,
             gyIconIsImage: !hasEmoji && hasCustomImg,
+            // Penanda chip AKTIF untuk tema (dipakai `gy-category--active` di
+            // category_selector_patch.xml).
+            //
+            // Kenapa tidak memakai `info.isSelected` yang sudah ada: di Odoo 19
+            // isSelected = [undefined, ...allParents, selected].includes(category),
+            // jadi LELUHUR dari kategori terpilih ikut bernilai true. Hasil ukur
+            // 19 Sep 2026: keenam chip tampil "aktif" sekaligus. Yang boleh
+            // berwarna merah hanya kategori yang
+            // benar-benar dipilih, jadi pembandingnya harus `selectedCategory.id`.
+            gyIsActive: category.id === this.pos.selectedCategory?.id,
         };
     },
 });

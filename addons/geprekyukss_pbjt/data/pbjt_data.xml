@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Grup pajak PBJT (pajak daerah) -->
+        <record id="tax_group_pbjt" model="account.tax.group">
+            <field name="name">PBJT (Pajak Daerah)</field>
+            <field name="country_id" ref="base.id"/>
+        </record>
+
+        <!-- Akun utang PBJT (pajak daerah yang dipungut dari pelanggan) -->
+        <record id="account_pbjt_payable" model="account.account">
+            <field name="name">Hutang PBJT (Pajak Restoran)</field>
+            <field name="code">2102.90</field>
+            <field name="account_type">liability_current</field>
+            <field name="company_ids" eval="[(6, 0, [ref('base.main_company')])]"/>
+        </record>
+
+        <!-- Pajak jual PBJT 10%, harga sudah termasuk pajak (tax-inclusive).
+             Dasar: Perda Kota Makassar No. 1 Tahun 2024, Pasal 60. -->
+        <record id="tax_pbjt_10" model="account.tax">
+            <field name="name">PBJT Makanan &amp; Minuman 10%</field>
+            <field name="description">PBJT 10% (Perda Makassar 1/2024)</field>
+            <field name="amount">10.0</field>
+            <field name="amount_type">percent</field>
+            <field name="type_tax_use">sale</field>
+            <field name="price_include_override">tax_included</field>
+            <field name="include_base_amount" eval="False"/>
+            <field name="tax_group_id" ref="tax_group_pbjt"/>
+            <field name="company_id" ref="base.main_company"/>
+            <field name="repartition_line_ids" eval="[
+                (0, 0, {'document_type': 'invoice', 'repartition_type': 'base'}),
+                (0, 0, {'document_type': 'invoice', 'repartition_type': 'tax',
+                        'account_id': ref('account_pbjt_payable')}),
+                (0, 0, {'document_type': 'refund', 'repartition_type': 'base'}),
+                (0, 0, {'document_type': 'refund', 'repartition_type': 'tax',
+                        'account_id': ref('account_pbjt_payable')}),
+            ]"/>
+        </record>
+    </data>
+</odoo>

@@ -14,9 +14,21 @@ Prinsip (roadmap §C / keputusan Q1 kanonik):
 - Preview meniru jalur UI: data wizard di-serialisasi JSON-safe (tanggal →
   string) sebelum masuk report model — sama dengan round-trip RPC asli.
 
-Filter shell (Q3 keputusan): date range + outlet. Outlet dipetakan ke
-journal wizard (pos.config.journal_id) — mapping terdekat yang tersedia
-(wizard AFR tidak punya konsep pos.config). [] = tanpa filter.
+Filter shell (Q3 keputusan): date range + outlet. Di build ini outlet TIDAK
+bisa menyaring laporan akuntansi (AFR/MIS): kedua pos.config berbagi journal
+yang sama (POSS id 9), pos.order tidak ter-link ke account.move, dan
+account.move.line tidak membawa dimensi outlet. Filter journal lama adalah
+no-op yang menyesatkan (temuan audit A1) — lihat OUTLET_FILTER_ENABLED.
+[] = tanpa filter.
+
+A2 (audit): periode MIS TIDAK lagi ditulis ke record persisten
+mis.report.instance. Tiap request memakai clone sementara (temporary=True)
+yang dibuang sendiri (preview) atau di-vacuum cron (export), sehingga tidak
+ada tabrakan multi-user / drift definisi laporan.
+
+C1 (audit): tabel AFR mendukung paginasi + pencarian + sorting SERVER-SIDE
+(limit/offset/search/sort_key/sort_dir) supaya payload tidak pernah
+mengirim puluhan ribu baris sekaligus.
 """
 import datetime
 import logging
@@ -79,6 +91,12 @@ class GkDashboardReportActions(models.AbstractModel):
         "general_ledger": "account_journal_ids",
         "journal_ledger": "journal_ids",
     }
+    # A1 (audit): filter outlet untuk laporan akuntansi DINONAKTIFKAN karena
+    # tidak ada dimensi outlet yang membedakan di account.move.line. Mapping
+    # outlet→journal bersifat no-op (semua outlet berbagi journal yang sama)
+    # sehingga laporan tampak terfilter padahal identik. Nyalakan kembali
+    # hanya jika journal/dimensi per outlet benar-benar tersedia.
+    OUTLET_FILTER_ENABLED = False
 
     # ------------------------------------------------------------------
     # PUBLIC API — dipanggil dari OWL via orm.call
@@ -87,7 +105,8 @@ class GkDashboardReportActions(models.AbstractModel):
     def get_report_data(self, report_key, params):
         """Preview: dict siap-render untuk <ReportTable>/<ReportMatrix>.
 
-        params: {date_from, date_to, outlet_ids: []|None}
+        params: {date_from, date_to, outlet_ids: []|None,
+                 limit, offset, search, sort_key, sort_dir}  (paginasi tabel)
         AFR  → {kind: "table", columns, rows, meta}
         MIS  → payload asli compute() + kind "matrix" (shape stabil, dijaga OCA).
         """
@@ -95,7 +114,7 @@ class GkDashboardReportActions(models.AbstractModel):
         if report_key in self.AFR_REPORTS:
             table = self._afr_preview(report_key, params)
             table["kind"] = "table"
-            return table
+            return self._paginate_table(table, params)
         if report_key in self.MIS_REPORTS:
             data = self._mis_preview(report_key, params)
             data["kind"] = "matrix"
@@ -160,11 +179,15 @@ class GkDashboardReportActions(models.AbstractModel):
         model_name = self.AFR_REPORTS[report_key]
         builder = getattr(self, "_vals_%s" % report_key, lambda vals, params: vals)
         vals = builder(vals, params)
-        # Filter outlet → journals (hanya wizard yang punya field journal)
-        journal_field = self.JOURNAL_FIELD.get(report_key)
-        journal_ids = journal_field and self._outlet_journal_ids(params)
-        if journal_field and journal_ids:
-            vals[journal_field] = [(6, 0, journal_ids)]
+        # Filter outlet → journals (hanya wizard yang punya field journal).
+        # A1: dinonaktifkan selama belum ada dimensi outlet nyata (lihat
+        # OUTLET_FILTER_ENABLED) — mencegah laporan tampak terfilter padahal
+        # tidak. Bila kelak diaktifkan, mapping journal di bawah ini berlaku.
+        if self.OUTLET_FILTER_ENABLED:
+            journal_field = self.JOURNAL_FIELD.get(report_key)
+            journal_ids = journal_field and self._outlet_journal_ids(params)
+            if journal_field and journal_ids:
+                vals[journal_field] = [(6, 0, journal_ids)]
         wizard = self.env[model_name].create(vals)
         wizard._set_default_wizard_values()
         return wizard
@@ -186,7 +209,12 @@ class GkDashboardReportActions(models.AbstractModel):
         return vals
 
     def _outlet_journal_ids(self, params):
-        """Map outlet (pos.config ids) → journal id terkait (mapping terdekat)."""
+        """Map outlet (pos.config ids) → journal id terkait (mapping terdekat).
+
+        A1 (audit): hanya dipakai bila OUTLET_FILTER_ENABLED=True. Di build ini
+        kedua outlet memakai journal yang sama (POSS id 9) sehingga hasilnya
+        tidak menyempitkan apa pun — filter outlet akuntansi sengaja OFF.
+        """
         outlet_ids = [int(x) for x in (params.get("outlet_ids") or []) if x]
         if not outlet_ids:
             return []
@@ -194,6 +222,58 @@ class GkDashboardReportActions(models.AbstractModel):
         if not configs or "journal_id" not in self.env["pos.config"]._fields:
             return []
         return configs.mapped("journal_id").ids
+
+    # ------------------------------------------------------------------
+    # C1 — paginasi / cari / urut SERVER-SIDE untuk tabel AFR.
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _paginate_table(table, params):
+        """Saring + urut + potong baris tabel di server sebelum dikirim.
+
+        Alasan (audit C1): GL 1 bulan = ±18 rb baris / 4,76 MB. Frontend cukup
+        meminta satu halaman (limit/offset) + kata kunci/sort, bukan seluruh
+        payload. Bila tidak ada limit, tabel dikembalikan utuh (kompatibel
+        dgn konsumen lama) + meta.total_rows.
+        """
+        rows = table.get("rows") or []
+        columns = table.get("columns") or []
+        meta = table.setdefault("meta", {})
+        meta["total_rows"] = len(rows)
+
+        search = (params.get("search") or "").strip().lower()
+        if search:
+            searchable = [c["key"] for c in columns if c.get("searchable")]
+            if searchable:
+                rows = [
+                    r for r in rows
+                    if any(search in str(r.get(k) if r.get(k) is not None else "").lower()
+                           for k in searchable)
+                ]
+
+        sort_key = params.get("sort_key")
+        if sort_key and any(c.get("key") == sort_key and c.get("sortable") for c in columns):
+            is_num = any(c.get("key") == sort_key and c.get("format") == "currency"
+                         for c in columns)
+            reverse = str(params.get("sort_dir") or "asc").lower() == "desc"
+            if is_num:
+                rows = sorted(rows, key=lambda r: float(r.get(sort_key) or 0.0), reverse=reverse)
+            else:
+                rows = sorted(rows, key=lambda r: str(r.get(sort_key) or ""), reverse=reverse)
+
+        meta["filtered_rows"] = len(rows)
+
+        limit = params.get("limit")
+        if limit:
+            limit = max(1, int(limit))
+            offset = max(0, int(params.get("offset") or 0))
+            table["rows"] = rows[offset:offset + limit]
+            meta["offset"] = offset
+            meta["limit"] = limit
+            meta["server_paginated"] = True
+            meta["has_more"] = offset + limit < len(rows)
+        else:
+            table["rows"] = rows
+        return table
 
     def _report_label(self, report_key):
         return {
@@ -338,23 +418,49 @@ class GkDashboardReportActions(models.AbstractModel):
     # (shape diverifikasi langsung dari report model Test1, 12 Sep 2026)
     # ------------------------------------------------------------------
     def _adapt_trial_balance(self, wizard, values):
+        """Trial Balance AFR — disajikan PERIODE-FIRST (perbaikan 22 Sep 2026).
+
+        Semantik kolom engine AFR (penting, pernah menyesatkan):
+          * debit / credit        = MUTASI periode date_from..date_to
+          * balance               = mutasi neto periode (debit − credit)
+          * initial_balance       = saldo awal (kumulatif s/d sehari sebelum date_from)
+          * ending_balance        = saldo akhir (kumulatif s/d date_to)
+        Dulu kolom "Saldo" diambil dari ending_balance tanpa keterangan → terbaca
+        seolah angka bulanan, padahal kumulatif. Sekarang: mutasi periode
+        ditampilkan eksplisit dan kolom kumulatif diberi nama tegas.
+        Key `balance` TETAP = ending_balance (kompatibilitas skrip/konsumen lama).
+        """
         columns = [
             {"key": "code", "label": "Kode", "align": "left", "sortable": True, "searchable": True},
             {"key": "name", "label": "Akun", "align": "left", "sortable": True, "searchable": True},
-            {"key": "debit", "label": "Debit", "align": "right", "format": "currency", "sortable": True},
-            {"key": "credit", "label": "Kredit", "align": "right", "format": "currency", "sortable": True},
-            {"key": "balance", "label": "Saldo", "align": "right", "format": "currency", "sortable": True},
+            {"key": "initial_balance", "label": "Saldo Awal (kumulatif)", "align": "right",
+             "format": "currency", "sortable": True},
+            {"key": "debit", "label": "Mutasi Debit (periode)", "align": "right",
+             "format": "currency", "sortable": True},
+            {"key": "credit", "label": "Mutasi Kredit (periode)", "align": "right",
+             "format": "currency", "sortable": True},
+            {"key": "period_balance", "label": "Saldo Periode (Debit − Kredit)", "align": "right",
+             "format": "currency", "sortable": True},
+            {"key": "balance", "label": "Saldo Akhir (kumulatif)", "align": "right",
+             "format": "currency", "sortable": True},
         ]
         rows = []
         for r in values.get("trial_balance") or []:
             rows.append({
                 "code": self._f(r, "code"),
                 "name": self._f(r, "name"),
+                "initial_balance": float(self._f(r, "initial_balance", 0.0) or 0.0),
                 "debit": self._f(r, "debit", 0.0),
                 "credit": self._f(r, "credit", 0.0),
+                "period_balance": float(self._f(r, "balance", 0.0) or 0.0),
                 "balance": self._f(r, "ending_balance", 0.0),
             })
-        return {"columns": columns, "rows": rows, "meta": self._afr_meta(values)}
+        meta = self._afr_meta(values)
+        meta["note"] = (
+            "Mutasi Debit/Kredit & Saldo Periode = transaksi DI DALAM rentang tanggal. "
+            "Saldo Awal & Saldo Akhir = saldo buku kumulatif (bukan angka periode)."
+        )
+        return {"columns": columns, "rows": rows, "meta": meta}
 
     def _adapt_general_ledger(self, wizard, values):
         """values['general_ledger'] = list akun → move_lines per akun.
@@ -374,7 +480,8 @@ class GkDashboardReportActions(models.AbstractModel):
             {"key": "label", "label": "Keterangan", "align": "left", "searchable": True},
             {"key": "debit", "label": "Debit", "align": "right", "format": "currency", "sortable": True},
             {"key": "credit", "label": "Kredit", "align": "right", "format": "currency", "sortable": True},
-            {"key": "balance", "label": "Saldo", "align": "right", "format": "currency", "sortable": True},
+            {"key": "balance", "label": "Saldo Berjalan (kumulatif)", "align": "right",
+             "format": "currency", "sortable": True},
         ]
         rows = []
         totals_d = totals_c = 0.0
@@ -433,6 +540,10 @@ class GkDashboardReportActions(models.AbstractModel):
         meta = self._afr_meta(values)
         meta["totals"] = self._totals_meta(
             [("Buku Besar", {"debit": totals_d, "credit": totals_c})]
+        )
+        meta["note"] = (
+            "Baris = mutasi DI DALAM rentang tanggal. Kolom Saldo Berjalan bersifat "
+            "kumulatif (saldo buku setelah tiap transaksi), bukan angka periode."
         )
         return {"columns": columns, "rows": rows, "meta": meta}
 
@@ -549,6 +660,10 @@ class GkDashboardReportActions(models.AbstractModel):
                 prow["style"] = "muted"
                 rows.append(prow)
         meta = self._afr_meta(values)
+        meta["note"] = (
+            "Snapshot per tanggal akhir (umur piutang/utang as-of), bukan mutasi "
+            "periode dan bukan angka kumulatif buku."
+        )
         meta["totals"] = [{
             "label": "Total",
             "columns": ["b_%s" % k for k in bucket_keys] + ["total"],
@@ -622,7 +737,12 @@ class GkDashboardReportActions(models.AbstractModel):
                 else "ar" if at == "asset_receivable"
                 else "other"
             )
-        return {"columns": columns, "rows": rows, "meta": self._afr_meta(values)}
+        meta = self._afr_meta(values)
+        meta["note"] = (
+            "Snapshot sisa terbuka per tanggal akhir (bukan mutasi periode, "
+            "bukan saldo kumulatif buku)."
+        )
+        return {"columns": columns, "rows": rows, "meta": meta}
 
     def _adapt_journal_ledger(self, wizard, values):
         """values['Journal_Ledgers'] = list journal → report_moves →
@@ -668,21 +788,51 @@ class GkDashboardReportActions(models.AbstractModel):
     # ------------------------------------------------------------------
     def _mis_preview(self, report_key, params):
         instance = self._get_mis_instance(report_key)
-        self._apply_mis_period(instance, params)
-        payload = instance.compute()  # method resmi: KpiMatrix.as_dict() + notes
-        payload["title"] = instance.name
-        payload["meta"] = {
-            "company_name": self.env.company.display_name,
-            "currency_name": instance.currency_id.name or "IDR",
-        }
-        return payload
+        # A2: clone sementara — TIDAK menyentuh record persisten (multi-user
+        # aman, definisi laporan tidak drift). Clone dibuang setelah compute.
+        isolated = self._isolated_mis_instance(instance, params, report_key)
+        try:
+            payload = isolated.compute()  # method resmi: KpiMatrix.as_dict() + notes
+            payload["title"] = instance.name
+            payload["meta"] = {
+                "company_name": self.env.company.display_name,
+                "currency_name": isolated.currency_id.name or "IDR",
+            }
+            return payload
+        finally:
+            isolated.unlink()
 
     def _mis_export(self, report_key, params, fmt):
         instance = self._get_mis_instance(report_key)
-        self._apply_mis_period(instance, params)
+        # A2: clone sementara (temporary=True) — dibuang otomatis oleh cron
+        # mis_builder `_vacuum_report` (tiap 4 jam). Clone harus tetap hidup
+        # sampai renderer PDF/XLSX membacanya, karena itu tidak di-unlink di
+        # sini. Record persisten asli tidak pernah diubah.
+        isolated = self._isolated_mis_instance(
+            instance, params, report_key, temporary=True
+        )
         if fmt == "xlsx":
-            return instance.export_xls()
-        return instance.print_pdf()
+            return isolated.export_xls()
+        return isolated.print_pdf()
+
+    def _isolated_mis_instance(self, instance, params, report_key, temporary=False):
+        """Clone instance + set kolom periode dari filter shell (A2).
+
+        Clone punya id sendiri sehingga `_apply_mis_period` TIDAK boleh
+        membandingkan record dgn xmlid asli — identifikasi report lewat
+        `report_key`.
+        """
+        clone = instance.copy({"temporary": temporary})
+        try:
+            # copy() OCA menambahkan sufiks "(copy)" pada name; kembalikan nama
+            # asli agar judul preview/ekspor tetap bersih.
+            clone.write({"name": instance.name})
+            self._apply_mis_period(clone, params, report_key)
+        except Exception:
+            # Jangan tinggalkan clone menggantung bila setup periode gagal.
+            clone.unlink()
+            raise
+        return clone
 
     def _get_mis_instance(self, report_key):
         xmlid = self.MIS_REPORTS[report_key]
@@ -693,72 +843,132 @@ class GkDashboardReportActions(models.AbstractModel):
             )
         return instance
 
-    def _apply_mis_period(self, instance, params):
-        """Sinkron kolom periode dengan filter shell.
+    @staticmethod
+    def _is_full_month(d1, d2):
+        """True bila [d1, d2] persis satu bulan penuh (mis. 01..31 Agustus)."""
+        if d1.day != 1 or (d1.year, d1.month) != (d2.year, d2.month):
+            return False
+        last = (d2.replace(day=28) + datetime.timedelta(days=4)).replace(
+            day=1
+        ) - datetime.timedelta(days=1)
+        return d2 == last
 
-        Dua pola instance:
-        - cash_flow_mis (bawaan modul): kolom pertama relatif minggu —
-          override kolom pertama jadi fixed bulan shell; kolom forecast
-          relatif lainnya dibiarkan (behavior resmi instance).
-        - profit_loss_mis (F5a): 2 kolom fix "Bulan Ini" + "YTD" (Q4) —
-          keduanya di-set dari filter shell: Bulan = date range filter;
-          YTD = 1 Jan tahun date_to s.d. date_to.
-        - balance_sheet_mis (F5b): 2 kolom fix ber-window tahun fiskal
-          (window FY penting: balp kolom = NI YTD, selaras _net_income
-          Tab 2) — kolom 1 per akhir bulan filter, kolom 2 per akhir bulan
-          lalu (neraca = posisi per tanggal; 2 kolom "bulan+YTD" akan
-          identik). Keduanya self-balancing.
+    @staticmethod
+    def _period_vals(type_, offset, duration, ytd):
+        """Nilai kolom periode: relatif ke base date, TANPA tanggal literal."""
+        return {
+            "mode": "relative",              # MODE_REL
+            "type": type_,                   # 'm' = satuan bulan, 'd' = satuan hari
+            "offset": offset,
+            "duration": duration,
+            "is_ytd": ytd,
+            "manual_date_from": False,       # bersihkan sisa tanggal literal lama
+            "manual_date_to": False,
+            "date_range_id": False,
+        }
+
+    @classmethod
+    def _window_month(cls, offset, ytd=False):
+        """Kolom = N bulan relatif ke base date (satuan BULAN, bukan hari).
+
+        MIS Builder menghitung `base.replace(day=1) + N bulan` lalu menutup di
+        hari terakhir bulan itu, jadi panjang 28/30/31 hari menyesuaikan
+        sendiri. Satuan HARI tidak bisa dipakai untuk ini: −30 hari dari
+        30 Juni = 31 Mei, bukan 1 Juni.
+        """
+        return cls._period_vals("m", offset, 1, ytd)
+
+    @classmethod
+    def _window_end(cls, date_to, base, ytd=True):
+        """Kolom berakhir PERSIS di `date_to` (dipakai rentang custom) → hari.
+
+        `duration=1` + `ytd=True`: MIS Builder memaksa awal = 1 Jan tahun
+        `date_to`, jadi kolom YTD/posisi selalu mulai dari awal tahun berapa
+        pun base date-nya.
+        """
+        base_d = datetime.date.fromisoformat(str(base)[:10])
+        d2 = datetime.date.fromisoformat(str(date_to)[:10])
+        return cls._period_vals("d", (d2 - base_d).days, 1, ytd)
+
+    @staticmethod
+    def _window(date_from, date_to, base, ytd=False):
+        """Rentang tanggal → window RELATIF terhadap 'base date' instance.
+
+        Yang masuk konfigurasi adalah (offset, duration), bukan tanggal: begitu
+        base date bergeser, seluruh kolom ikut bergerak dan tidak ada tanggal
+        literal yang bisa basi. Dipakai untuk rentang custom (bukan bulan penuh)
+        supaya rentangnya terwakili PERSIS, bukan dibulatkan ke bulan penuh.
+
+        PENTING: `offset` dihitung dari BASE DATE, bukan dari `date_to`.
+        """
+        d1 = datetime.date.fromisoformat(str(date_from)[:10])
+        d2 = datetime.date.fromisoformat(str(date_to)[:10])
+        base_d = datetime.date.fromisoformat(str(base)[:10])
+        return GkDashboardReportActions._period_vals(
+            "d", (d1 - base_d).days, (d2 - d1).days + 1, ytd
+        )
+
+    def _apply_mis_period(self, instance, params, report_key):
+        """Sinkron kolom periode dengan filter shell — lewat SATU variabel.
+
+        Dipanggil pada CLONE sementara (A2), bukan record persisten. Identifikasi
+        bentuk kolom lewat `report_key` (clone tidak sama dgn xmlid asli).
+
+        Yang di-set hanya `instance.date` ("Base date") = date_to filter; kolom
+        periode ditulis sebagai window RELATIF ke base date itu (`_window_month`
+        / `_window` / `_window_end`). Konsekuensinya:
+          * laporan SELALU dihitung dari variabel filter, bukan tanggal mati;
+          * kolom ikut bergerak sendiri saat bulan/rentang filter diganti;
+          * bentuk kolom mengikuti bentuk rentang yang dipilih (bulan penuh ->
+            satuan bulan, custom -> satuan hari), jadi tidak meleset di bulan
+            yang jumlah harinya bukan 31;
+          * tidak ada tanggal literal tersisa di mis.report.instance.period.
+
+        Bentuk kolom tiap instance (sama seperti sebelumnya, hanya walinya):
+        - cash_flow_mis (OCA): 1 kolom = rentang filter;
+        - profit_loss_mis    : kolom 1 = rentang filter, kolom 2 = YTD
+          (1 Jan tahun date_to → date_to);
+        - balance_sheet_mis  : kolom 1 = posisi per akhir rentang
+          (1 Jan → date_to), kolom 2 = posisi akhir bulan sebelumnya
+          (1 Jan → sehari sebelum date_from). Neraca = posisi per tanggal,
+          jadi 2 kolom "bulan + YTD" akan identik — karena itu kolom 2
+          sengaja diarahkan ke bulan sebelumnya.
         """
         date_from = params.get("date_from")
         date_to = params.get("date_to")
         if not date_from or not date_to:
             return
-        if instance == self.env.ref(
-            "mis_builder_cash_flow.mis_instance_cash_flow", raise_if_not_found=False
-        ):
-            first = instance.period_ids[:1]
-            if not first:
-                return
-            first.write({
-                "mode": "fix",  # MODE_FIX (bukan 'fixed')
-                "manual_date_from": date_from,
-                "manual_date_to": date_to,
-            })
-            return
+        instance.date = date_to            # <-- SATU-SATUNYA variabel periode
         periods = instance.period_ids.sorted("sequence")
         if not periods:
             return
-        if instance == self.env.ref(
-            "geprekyukss_dashboard.mis_instance_bs", raise_if_not_found=False
-        ):
-            # Neraca (F5b): kedua kolom ber-window FY (1 Jan → akhir bulan).
-            ytd_from = "%s-01-01" % date_to[:4]
-            prev_to = (
-                datetime.date.fromisoformat(date_from) - datetime.timedelta(days=1)
-            ).isoformat()
-            periods[:1].write({
-                "mode": "fix",
-                "manual_date_from": ytd_from,
-                "manual_date_to": date_to,
-            })
-            periods[1:2].write({
-                "mode": "fix",
-                "manual_date_from": ytd_from,
-                "manual_date_to": prev_to,
-            })
+        d1 = datetime.date.fromisoformat(str(date_from)[:10])
+        d2 = datetime.date.fromisoformat(str(date_to)[:10])
+        prev_to = (d1 - datetime.timedelta(days=1)).isoformat()
+        # Bentuk kolom mengikuti BENTUK rentang yang dipilih, bukan bulan tetap:
+        #   * rentang = satu bulan penuh -> satuan BULAN, jadi benar juga di
+        #     bulan 28/30 hari (offset hari akan meleset);
+        #   * rentang lain (custom)      -> satuan HARI, persis.
+        month_mode = self._is_full_month(d1, d2)
+
+        def selected(ytd=False):
+            """Kolom = rentang yang dipilih (bulan penuh atau custom)."""
+            if month_mode:
+                return self._window_month(0, ytd)
+            return self._window(date_from, date_to, date_to, ytd=ytd)
+
+        if report_key == "cash_flow_mis":
+            periods[:1].write(selected())
             return
-        # P&L (F5a): kolom 1 = bulan filter, kolom 2 = YTD sampai date_to
-        month_col = periods[:1]
-        ytd_col = periods[1:2]
-        if month_col:
-            month_col.write({
-                "mode": "fix",
-                "manual_date_from": date_from,
-                "manual_date_to": date_to,
-            })
-        if ytd_col:
-            ytd_col.write({
-                "mode": "fix",
-                "manual_date_from": "%s-01-01" % date_to[:4],
-                "manual_date_to": date_to,
-            })
+        if report_key == "balance_sheet_mis":
+            # Kolom 1 = posisi akhir rentang (selalu 1 Jan tahun berjalan -> date_to).
+            periods[:1].write(selected(ytd=True))
+            # Kolom 2 = posisi akhir bulan sebelumnya (akhir = sehari sebelum date_from).
+            if month_mode:
+                periods[1:2].write(self._window_month(-1, True))
+            else:
+                periods[1:2].write(self._window_end(prev_to, date_to, ytd=True))
+            return
+        # P&L (F5a): kolom 1 = rentang filter, kolom 2 = YTD sampai date_to
+        periods[:1].write(selected())
+        periods[1:2].write(selected(ytd=True))

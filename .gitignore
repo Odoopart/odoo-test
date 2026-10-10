@@ -17,3 +17,16 @@ metrics_setelah_restore.txt
 
 # Data sensitif / kredensial
 .env
+
+# Keluaran sementara harness verifikasi browser POS (profil Chromium + tangkapan layar)
+.pos-verify/
+
+# Dokumen/media besar di root (zip, pdf, screenshot) — tidak masuk repo
+/*.zip
+/*.pdf
+/*.png
+/*.jpg
+/*.jpeg
+
+# Repo git bersarang (bukan bagian proyek)
+/repo/

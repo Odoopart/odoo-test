@@ -3,572 +3,1279 @@
 
     <t t-name="geprekyukss_dashboard.Main">
         <div class="gk-dash">
-            <aside class="gk-sidebar">
-                <div class="gk-brand">
-                    <img class="gk-brand-logo-img"
-                         src="/geprekyukss_dashboard/static/src/brand/logo.jpg"
-                         alt="Logo Geprekyukss"/>
-                    <div>
-                        <div class="gk-brand-name">Geprekyukkkss</div>
-                        <div class="gk-brand-sub">F&amp;B Operations</div>
-                    </div>
-                </div>
+            <a href="#gk-main" class="gk-skip-link">Lewati ke konten utama</a>
 
-                <nav class="gk-nav">
-                    <t t-foreach="tabs" t-as="tab" t-key="tab.id">
-                        <a href="#"
-                           t-att-class="'gk-nav-item' + (state.activeTab === tab.id ? ' active' : '')"
-                           t-on-click.prevent="() => this.selectTab(tab.id)">
-                            <i t-att-class="'fa ' + tab.icon"/>
-                            <span t-esc="tab.label"/>
-                        </a>
-                    </t>
-                </nav>
+            <!-- ================= TOP NAV (mock: header navy) ================= -->
+            <header class="gk-topnav" role="banner">
+                <div class="gk-topnav-inner">
+                    <div class="gk-topnav-row">
 
-                <div class="gk-sidebar-bottom">
-                    <a href="#" class="gk-nav-item gk-nav-item-sm"
-                       t-on-click.prevent="() => this.openReports()">
-                        <i class="fa fa-file-text-o"/>
-                        <span>Laporan Keuangan Lengkap</span>
-                    </a>
-                    <div class="gk-outlets-head">
-                        <span class="gk-outlets-label">Koneksi outlet</span>
-                        <span class="gk-live-flag"><span class="gk-live-dot"/>Live</span>
-                    </div>
-                    <div class="gk-outlet"><span class="gk-dot"/>Restoran Pallangga</div>
-                    <div class="gk-outlet"><span class="gk-dot"/>Restoran Mallengkeri</div>
-                    <div class="gk-nav-section gk-updated"><i class="fa fa-clock-o"/>Diperbarui <t t-esc="lastUpdatedLabel"/></div>
-                </div>
-            </aside>
-
-            <main class="gk-main" t-ref="main">
-                <header class="gk-header">
-                    <div class="gk-header-title">
-                        <h1 class="gk-title" t-esc="tabs.find(t =&gt; t.id === state.activeTab).label"/>
-                        <!-- SPEC_OVERHAUL F1: "Premium" pill button di samping judul (mirip referensi) -->
-                        <span class="gk-premium-pill" title="Akses modul premium"><span class="gk-premium-dot"/>Premium</span>
-                        <div class="gk-subtitle">Laporan keuangan live — Geprekyukss · <t t-esc="monthLabel"/></div>
-                    </div>
-                    <div class="gk-header-actions">
-                        <!-- SPEC_OVERHAUL F0: Header date range — default MONTH mode (single pill
-                             seperti referensi "1 Jan – 31 Jan 2025 ▼"), toggle ke CUSTOM mode. -->
-                        <t t-if="state.rangeMode === 'month'">
-                            <div class="gk-month-picker">
-                                <button class="gk-month-btn" t-on-click="() => this.prevMonth()" title="Bulan sebelumnya">‹</button>
-                                <span class="gk-month-label"><i class="fa fa-calendar"/> <t t-esc="monthLabel"/></span>
-                                <button class="gk-month-btn" t-on-click="() => this.nextMonth()" title="Bulan berikutnya">›</button>
-                            </div>
-                            <button class="gk-btn-export gk-btn-ghost gk-range-toggle"
-                                    t-on-click="() => this.setRangeMode('custom')"
-                                    title="Pilih rentang tanggal bebas">
-                                <i class="fa fa-arrows-h"/> Rentang Kustom
+                        <!-- KIRI — hamburger (mobile) + badge demo (brand ada di sidebar) -->
+                        <div class="gk-topnav-left">
+                            <button class="gk-nav-toggle" t-on-click="toggleSidebar" title="Buka navigasi"
+                                    aria-label="Buka atau tutup navigasi" aria-controls="gk-sidebar"
+                                    t-att-aria-expanded="state.sidebarOpen ? 'true' : 'false'">
+                                <i class="fa fa-bars" aria-hidden="true"/>
                             </button>
-                        </t>
-                        <t t-else="">
-                            <div class="gk-range-picker">
-                                <input type="date" class="gk-range-input" t-att-value="state.date_from"
-                                       t-on-change="(ev) => { state.date_from = ev.target.value; onCustomRangeChange(); }"
-                                       aria-label="Tanggal awal"/>
-                                <span class="gk-range-sep">–</span>
-                                <input type="date" class="gk-range-input" t-att-value="state.date_to"
-                                       t-on-change="(ev) => { state.date_to = ev.target.value; onCustomRangeChange(); }"
-                                       aria-label="Tanggal akhir"/>
-                            </div>
-                            <div class="gk-range-presets" t-att-class="state.rangeError ? ' has-error' : ''">
-                                <button t-att-class="'gk-range-chip' + (state.activePreset === 'month_current' ? ' active' : '')"
-                                        t-on-click="() => this.applyPreset('month_current')">Bulan Ini</button>
-                                <button t-att-class="'gk-range-chip' + (state.activePreset === 'month_prev' ? ' active' : '')"
-                                        t-on-click="() => this.applyPreset('month_prev')">Bulan Lalu</button>
-                                <button t-att-class="'gk-range-chip' + (state.activePreset === '30d' ? ' active' : '')"
-                                        t-on-click="() => this.applyPreset('30d')">30 Hari</button>
-                                <button t-att-class="'gk-range-chip' + (state.activePreset === 'ytd' ? ' active' : '')"
-                                        t-on-click="() => this.applyPreset('ytd')">YTD</button>
-                                <button class="gk-range-chip gk-range-back"
+                            <!-- Brand sengaja TIDAK diulang di sini — logo + nama
+                                 sudah ada di sidebar (.gk-brand), jadi topnav cukup
+                                 jadi toolbar filter + aksi (hindari header ganda). -->
+                            <span class="gk-badge demo gk-hidden-mobile">Portfolio Demo</span>
+                        </div>
+
+                        <!-- TENGAH — filter periode + outlet (mock) -->
+                        <div class="gk-filters">
+                            <t t-if="state.rangeMode === 'month'">
+                                <div class="gk-month-picker">
+                                    <button class="gk-month-btn" t-on-click="() => this.prevMonth()" title="Bulan sebelumnya" aria-label="Bulan sebelumnya">‹</button>
+                                    <span class="gk-month-label"><i class="fa fa-calendar" aria-hidden="true"/> <t t-esc="monthLabel"/></span>
+                                    <button class="gk-month-btn" t-on-click="() => this.nextMonth()" title="Bulan berikutnya" aria-label="Bulan berikutnya">›</button>
+                                </div>
+                                <button class="gk-btn gk-btn-ghost"
+                                        t-on-click="() => this.setRangeMode('custom')"
+                                        title="Pilih rentang tanggal bebas">
+                                    <i class="fa fa-arrows-h" aria-hidden="true"/> Rentang Kustom
+                                </button>
+                            </t>
+                            <t t-else="">
+                                <div class="gk-range-picker">
+                                    <input type="date" class="gk-range-input" t-att-value="state.date_from"
+                                           t-on-change="(ev) => { state.date_from = ev.target.value; onCustomRangeChange(); }"
+                                           aria-label="Tanggal awal"/>
+                                    <span class="gk-range-sep">–</span>
+                                    <input type="date" class="gk-range-input" t-att-value="state.date_to"
+                                           t-on-change="(ev) => { state.date_to = ev.target.value; onCustomRangeChange(); }"
+                                           aria-label="Tanggal akhir"/>
+                                </div>
+                                <button class="gk-btn gk-btn-ghost"
                                         t-on-click="() => this.setRangeMode('month')"
-                                        title="Kembali ke mode bulan">⟲ Bulan</button>
-                            </div>
-                        </t>
+                                        title="Kembali ke mode bulan">
+                                    <i class="fa fa-undo" aria-hidden="true"/> Bulan
+                                </button>
+                            </t>
 
-                        <div class="gk-outlet-filter" t-ref="outletWrap">
-                            <button class="gk-outlet-btn"
-                                    t-att-class="state.outletMenuOpen ? 'open' : ''"
-                                    t-on-click.stop="toggleOutletMenu">
-                                <i class="fa fa-map-marker"/>
-                                <span class="gk-outlet-label" t-esc="state.outletFilter.name"/>
-                                <i class="fa fa-caret-down gk-outlet-caret"/>
-                            </button>
-                            <div t-if="state.outletMenuOpen" class="gk-outlet-menu">
-                                <t t-foreach="state.availableOutlets" t-as="opt" t-key="opt.id">
-                                    <button t-att-class="'gk-outlet-option' + (state.outletFilter.id === opt.id ? ' active' : '')"
-                                            t-on-click.stop="() => this.selectOutlet(opt)">
-                                        <i t-att-class="state.outletFilter.id === opt.id ? 'fa fa-check' : 'fa fa-circle-o gk-outlet-bullet'"/>
-                                        <span t-esc="opt.name"/>
-                                    </button>
-                                </t>
+                            <div class="gk-pill-menu-wrap" t-ref="outletWrap">
+                                <button class="gk-pill" t-on-click.stop="toggleOutletMenu"
+                                        aria-label="Filter outlet" aria-haspopup="true"
+                                        t-att-aria-expanded="state.outletMenuOpen ? 'true' : 'false'">
+                                    <i class="fa fa-map-marker" aria-hidden="true"/>
+                                    <span class="gk-pill-label" t-esc="state.outletFilter.name"/>
+                                    <i class="fa fa-caret-down gk-pill-caret" aria-hidden="true"/>
+                                </button>
+                                <div t-if="state.outletMenuOpen" class="gk-pill-menu">
+                                    <t t-foreach="state.availableOutlets" t-as="opt" t-key="opt.id">
+                                        <button t-att-class="'gk-pill-item' + (state.outletFilter.id === opt.id ? ' active' : '')"
+                                                t-att-aria-pressed="state.outletFilter.id === opt.id ? 'true' : 'false'"
+                                                t-on-click.stop="() => this.selectOutlet(opt)">
+                                            <span t-if="state.outletFilter.id === opt.id" class="gk-pill-bullet" aria-hidden="true"/>
+                                            <span t-esc="opt.name"/>
+                                        </button>
+                                    </t>
+                                </div>
                             </div>
                         </div>
-                        <button class="gk-btn-export" t-on-click="printReport"><i class="fa fa-file-pdf-o"/> PDF</button>
-                        <button class="gk-btn-export gk-btn-ghost" t-on-click="exportExcel"><i class="fa fa-file-excel-o"/> Excel</button>
-                        <!-- SPEC_OVERHAUL F0: avatar top-right (mirip referensi) -->
-                        <div class="gk-avatar" title="Admin Geprekyukss">A</div>
-                    </div>
-                </header>
 
-                <div t-if="state.rangeError" class="gk-range-error">
-                    <i class="fa fa-exclamation-circle"/> <t t-esc="state.rangeError"/>
+                        <!-- KANAN — aksi (mock: PDF / XLSX / avatar) -->
+                        <div class="gk-topnav-right">
+                            <button class="gk-btn gk-btn-ghost gk-hidden-mobile" t-on-click="printReport" title="Cetak / simpan PDF">
+                                <t t-out="icons.download"/> PDF
+                            </button>
+                            <button class="gk-btn gk-hidden-mobile" t-on-click="exportExcel"
+                                    t-att-disabled="state.exporting"
+                                    t-att-aria-busy="state.exporting ? 'true' : 'false'"
+                                    t-att-title="state.exporting ? 'Menyiapkan XLSX…' : 'Ekspor XLSX Laba Rugi'">
+                                <t t-out="icons.download"/> XLSX
+                            </button>
+                            <div class="gk-avatar" title="Admin Geprekyukss" role="img" aria-label="Pengguna: Admin Geprekyukss">A</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- ================= BODY — sidebar + main ================= -->
+            <div class="gk-body">
+                <div t-if="state.sidebarOpen" class="gk-sidebar-overlay" t-on-click="closeSidebar" aria-hidden="true"/>
+
+                <aside id="gk-sidebar" t-att-class="'gk-sidebar' + (state.sidebarOpen ? ' gk-sidebar-open' : '')">
+                    <div class="gk-brand">
+                        <img class="gk-brand-logo-img"
+                             src="/geprekyukss_dashboard/static/src/brand/logo.jpg"
+                             alt="Logo Geprekyukss"/>
+                        <div>
+                            <div class="gk-brand-name">Geprekyuukss</div>
+                            <div class="gk-brand-sub">F&amp;B Operations</div>
+                        </div>
+                    </div>
+
+                    <nav class="gk-nav" aria-label="Navigasi dashboard">
+                        <t t-foreach="navItems" t-as="item" t-key="item.id">
+                            <a href="#"
+                               t-att-class="'gk-nav-item' + (state.activeTab === item.id ? ' active' : '') + (item.id === 'lapkeu' ? ' gk-nav-item-sm' : '')"
+                               t-att-title="item.note"
+                               t-att-aria-current="state.activeTab === item.id ? 'page' : 'false'"
+                               t-on-click.prevent="() => this.onNavClick(item)">
+                                <i t-att-class="'fa ' + item.icon" aria-hidden="true"/>
+                                <span t-esc="item.label"/>
+                            </a>
+                        </t>
+                    </nav>
+
+                    <div class="gk-sidebar-bottom">
+                        <div class="gk-outlets-head">
+                            <span class="gk-outlets-label">Koneksi outlet</span>
+                            <span class="gk-live-flag"><span class="gk-live-dot" aria-hidden="true"/>Live</span>
+                        </div>
+                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Restoran Pallangga</span></div>
+                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Restoran Mallengkeri</span></div>
+                        <div class="gk-updated"><i class="fa fa-clock-o" aria-hidden="true"/>Diperbarui <t t-esc="lastUpdatedLabel"/></div>
+                    </div>
+                </aside>
+
+            <main id="gk-main" class="gk-main" t-ref="main" tabindex="-1"
+                  t-att-aria-busy="state.loading ? 'true' : 'false'">
+
+                <!-- Filter strip mobile (< 768px) — mock -->
+                <div class="gk-mobile-filters">
+                    <span class="gk-mobile-chip"><t t-out="icons.calendar"/> <t t-esc="monthLabel"/></span>
+                    <t t-foreach="state.availableOutlets" t-as="opt" t-key="opt.id">
+                        <button t-att-class="'gk-mobile-chip' + (state.outletFilter.id === opt.id ? ' is-active' : '')"
+                                t-on-click="() => this.selectOutlet(opt)">
+                            <span t-esc="opt.name"/>
+                        </button>
+                    </t>
                 </div>
 
-                <div t-if="state.loading" class="gk-loading"><i class="fa fa-circle-o-notch fa-spin fa-2x"/><p>Memuat data…</p></div>
+                <!-- Preset rentang tanggal (muncul hanya di mode custom) -->
+                <div t-if="state.rangeMode === 'custom'" class="gk-range-presets">
+                    <button t-att-class="'gk-range-chip' + (state.activePreset === 'month_current' ? ' active' : '')"
+                            t-on-click="() => this.applyPreset('month_current')">Bulan Ini</button>
+                    <button t-att-class="'gk-range-chip' + (state.activePreset === 'month_prev' ? ' active' : '')"
+                            t-on-click="() => this.applyPreset('month_prev')">Bulan Lalu</button>
+                    <button t-att-class="'gk-range-chip' + (state.activePreset === '30d' ? ' active' : '')"
+                            t-on-click="() => this.applyPreset('30d')">30 Hari</button>
+                    <button t-att-class="'gk-range-chip' + (state.activePreset === 'ytd' ? ' active' : '')"
+                            t-on-click="() => this.applyPreset('ytd')">YTD</button>
+                    <button class="gk-range-chip gk-range-back"
+                            t-on-click="() => this.setRangeMode('month')"
+                            title="Kembali ke mode bulan">⟲ Bulan</button>
+                </div>
 
-                <div t-elif="state.data and !state.data.has_data" class="gk-empty">
-                    <i class="fa fa-inbox fa-2x"/>
+                <div t-if="state.rangeError" class="gk-range-error" role="alert">
+                    <i class="fa fa-exclamation-circle" aria-hidden="true"/><span t-esc="state.rangeError"/>
+                </div>
+
+                <div t-if="state.loading" class="gk-loading" role="status" aria-live="polite"><i class="fa fa-circle-o-notch fa-spin fa-2x" aria-hidden="true"/><p>Memuat data…</p></div>
+
+                <div t-elif="state.data and !state.data.has_data" class="gk-empty" role="status">
+                    <i class="fa fa-inbox fa-2x" aria-hidden="true"/>
                     <p>Belum ada data untuk <b t-esc="monthLabel"/></p>
                     <p class="gk-empty-hint">Coba pilih rentang lain atau keluar mode bulan — data POS mulai Agustus 2026.</p>
                 </div>
 
                 <t t-elif="state.data and state.data.has_data and state.data.summary and state.data.finance and state.data.sales and state.data.ops" t-call="geprekyukss_dashboard.Content"/>
             </main>
+            </div>
         </div>
     </t>
 
     <!-- ================= KONTEN 7 TAB ================= -->
     <t t-name="geprekyukss_dashboard.Content">
 
-        <!-- ============ BERANDA (OVERHAUL 15 Sep: 5 KPI polos + tren + donut channel + kas + arus PSAK horizontal + neraca + laba bulanan) ============ -->
+        <!-- ============ BERANDA — layout lengkap mock High-Fidelity ============ -->
         <t t-if="state.activeTab === 'beranda'">
-            <!-- 5 KPI PSAK polos (OVERHAUL 15 Sep K1: hero band dihapus — Laba
-                 Bersih = KPI ke-5; tanpa icon circle, tanpa sub-line rasio/margin) -->
-            <div class="gk-kpi-row gk-kpi-row--5">
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Pendapatan</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(berandaKpi('net_revenue'), true)"/>
-                    <div class="gk-kpi-foot">
-                        <span t-att-class="'gk-badge ' + pctClass(berandaVs('net_revenue'))" t-esc="pctArrow(berandaVs('net_revenue')) or '—'"/>
-                        <span class="gk-muted">vs periode sebelumnya</span>
-                    </div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">HPP</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(berandaKpi('hpp_total'), true)"/>
-                    <div class="gk-kpi-foot">
-                        <span t-att-class="'gk-badge ' + pctClass(berandaVs('hpp_total'))" t-esc="pctArrow(berandaVs('hpp_total')) or '—'"/>
-                        <span class="gk-muted">vs periode sebelumnya</span>
-                    </div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Laba Kotor</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(berandaKpi('gross_profit'), true)"/>
-                    <div class="gk-kpi-foot">
-                        <span t-att-class="'gk-badge ' + pctClass(berandaVs('gross_profit'))" t-esc="pctArrow(berandaVs('gross_profit')) or '—'"/>
-                        <span class="gk-muted">vs periode sebelumnya</span>
-                    </div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Beban Usaha</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(berandaKpi('opex'), true)"/>
-                    <div class="gk-kpi-foot">
-                        <span t-att-class="'gk-badge ' + pctClass(berandaVs('opex'))" t-esc="pctArrow(berandaVs('opex')) or '—'"/>
-                        <span class="gk-muted">vs periode sebelumnya</span>
-                    </div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Laba Bersih</div>
-                    <div class="gk-kpi-value" t-att-class="berandaKpi('net_profit') &lt; 0 ? 'neg' : ''" t-esc="formatRp(berandaKpi('net_profit'), true)"/>
-                    <div class="gk-kpi-foot">
-                        <span t-att-class="'gk-badge ' + pctClass(berandaVs('net_profit'))" t-esc="pctArrow(berandaVs('net_profit')) or '—'"/>
-                        <span class="gk-muted">vs periode sebelumnya</span>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Tren Kinerja — pendapatan vs laba harian, full-width (OVERHAUL
-                 15 Sep K2: chart Laba Bulanan pindah ke row bawah) -->
-            <div class="gk-card gk-chart-card">
-                <div class="gk-card-head">
-                    <h3>Tren Kinerja Harian</h3>
-                    <div class="gk-legend-dot"><span style="display:inline-block;width:10px;height:3px;background:#0F7C6C;border-radius:999px;vertical-align:middle;margin-right:4px;"/>Pendapatan <span style="display:inline-block;width:10px;height:3px;background:#3B6FE0;border-radius:999px;vertical-align:middle;margin:0 4px 0 8px;"/>Laba</div>
-                </div>
-                <div class="gk-chart-beranda-tren gk-chart-box" style="height:260px;"><canvas/></div>
-                <div class="gk-muted small" style="margin-top:8px;">Garis teal = pendapatan harian (GL), biru = laba harian.</div>
-            </div>
+            <!-- 1. KPI STRIP (mock: KpiCard × 5) — markup bersama: template TabKpis -->
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
 
-            <!-- Analisis Kategori Produk — 1 card donut (OVERHAUL 15 Sep K3b-rev:
-                 segmen = 5 kategori produk via category_map.json, donut center + legend kanan) -->
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Analisis Kategori Produk</h3><span class="gk-muted">berdasar penjualan menu</span></div>
-                <div class="gk-channel-wrap">
-                    <div class="gk-chart-beranda-kategori gk-chart-box square"><canvas/></div>
-                    <div class="gk-channel-legend">
-                        <t t-foreach="(state.data.beranda and state.data.beranda.kategori_produk) || []" t-as="c" t-key="c.name">
-                            <div class="gk-channel-row">
-                                <span class="gk-legend-color" t-att-style="'background:' + gkKategoriColor(c.name)"/>
-                                <span class="gk-channel-name" t-esc="c.name"/>
-                                <b t-esc="formatRp(c.amount, true)"/>
-                                <span class="gk-badge up" t-esc="c.pct + '%'"/>
+            <!-- 1b. KONTRIBUSI OUTLET (F2) — estimasi POS saat filter outlet aktif -->
+            <div t-if="outletContribution" class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title" t-esc="'Kontribusi Outlet — ' + state.outletFilter.name"/>
+                    <span class="gk-badge pending">estimasi POS</span>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-grid-2" style="gap:12px;">
+                        <div class="gk-cash-card is-pass">
+                            <div class="gk-cash-top">
+                                <span class="gk-cash-status" aria-hidden="true"/>
+                                <span class="gk-cash-label">Omzet POS (exact)</span>
                             </div>
-                        </t>
-                        <t t-if="!(state.data.beranda and state.data.beranda.kategori_produk and state.data.beranda.kategori_produk.length)">
-                            <div class="gk-channel-row gk-muted">Belum ada penjualan pada periode ini</div>
-                        </t>
-                        <!-- fallback data lama: payload tanpa kategori_produk → tampil channel -->
-                        <t t-if="!(state.data.beranda and state.data.beranda.kategori_produk) and state.data.sales and state.data.sales.channels" t-foreach="state.data.sales.channels" t-as="c" t-key="c.name">
-                            <div class="gk-channel-row">
-                                <span class="gk-legend-color" t-att-style="'background:' + (gkChannelColor(c.name) || '#64748B')"/>
-                                <span class="gk-channel-name" t-esc="c.name"/>
-                                <span class="gk-muted" t-esc="c.order_count + ' order'"/>
-                                <b t-esc="formatRp(c.amount, true)"/>
-                                <span class="gk-badge up" t-esc="c.pct + '%'"/>
+                            <div class="gk-cash-amount" t-esc="formatRp(outletContribution.omzet, true)"/>
+                            <div class="gk-cash-note">dari pos.order terkonfirmasi</div>
+                        </div>
+                        <div class="gk-cash-card is-pass">
+                            <div class="gk-cash-top">
+                                <span class="gk-cash-status" aria-hidden="true"/>
+                                <span class="gk-cash-label">HPP estimasi</span>
                             </div>
-                        </t>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Kas / Bank / Settlement -->
-            <div class="gk-grid-3">
-                <div class="gk-card gk-stat-mini">
-                    <div class="gk-stat-mini-head"><span class="gk-kpi-icon amber" style="width:32px;height:32px;font-size:13px;"><i class="fa fa-money"/></span><span class="gk-muted">Kas</span></div>
-                    <div class="gk-stat-mini-value" t-esc="formatRp(berandaKas('kas'), true)"/>
-                    <div class="gk-muted small">saldo kas tunai (asset_cash)</div>
-                </div>
-                <div class="gk-card gk-stat-mini">
-                    <div class="gk-stat-mini-head"><span class="gk-kpi-icon blue" style="width:32px;height:32px;font-size:13px;"><i class="fa fa-university"/></span><span class="gk-muted">Bank &amp; E-Wallet</span></div>
-                    <div class="gk-stat-mini-value" t-esc="formatRp(berandaKas('bank'), true)"/>
-                    <div class="gk-muted small">BNI/BRI/QRIS/OVO/GOPAY</div>
-                </div>
-                <div class="gk-card gk-stat-mini">
-                    <div class="gk-stat-mini-head"><span class="gk-kpi-icon teal" style="width:32px;height:32px;font-size:13px;"><i class="fa fa-clock-o"/></span><span class="gk-muted">Settlement &amp; Piutang</span></div>
-                    <div class="gk-stat-mini-value" t-esc="formatRp(berandaKas('settlement_pending'), true)"/>
-                    <div class="gk-muted small">
-                        Outstanding 1103.06: <b t-esc="formatRp(berandaKas('settlement_pending'))"/>
-                        <span t-if="berandaKas('receivables')"> · Piutang <b t-esc="formatRp(berandaKas('receivables'), true)"/></span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Arus Kas PSAK2 — horizontal 3 kolom (OVERHAUL 15 Sep: restyle
-                 dari layout vertikal in/out menjadi Operasi/Investasi/Pendanaan) -->
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Arus Kas (PSAK 2) — ringkas</h3><span class="gk-muted">Operasi / Investasi / Pendanaan</span></div>
-                <div class="gk-cashflow">
-                    <div class="gk-cashflow-item in"><i class="fa fa-cogs"/><div><div class="gk-muted">Operasi</div><b t-esc="formatRp(berandaArus('operasi'))"/> <span class="gk-muted small">laba + penyusutan</span></div></div>
-                    <div class="gk-cashflow-item out"><i class="fa fa-building"/><div><div class="gk-muted">Investasi</div><b t-esc="formatRp(berandaArus('investasi'))"/> <span class="gk-muted small">Δ aset tetap</span></div></div>
-                    <div class="gk-cashflow-item"><i class="fa fa-exchange"/><div><div class="gk-muted">Pendanaan</div><b t-esc="formatRp(berandaArus('pendanaan'))"/> <span class="gk-muted small">plug Δ kas</span></div></div>
-                </div>
-                <div class="gk-expense-total" style="margin-top:12px;"><span>Net Δ Kas</span><b t-esc="formatRp(berandaArus('net'))"/></div>
-                <div class="gk-muted small" style="margin-top:8px;">Kas sekarang <b t-esc="formatRp(berandaArus('cash_now'), true)"/> · sebelumnya <b t-esc="formatRp(berandaArus('cash_prev'), true)"/> · Δ <b t-esc="formatRp(berandaArus('delta_cash'), true)"/></div>
-            </div>
-
-            <!-- Snapshot Neraca + Laba Bulanan — row bawah 2 kolom (OVERHAUL
-                 15 Sep K2/K4: Kepatuhan PSAK dihapus per keputusan user) -->
-            <div class="gk-grid-2">
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Snapshot Neraca</h3><span class="gk-muted">per <t t-esc="state.data.period.date_to"/></span></div>
-                    <div class="gk-balance-grid">
-                        <div><div class="gk-muted">Total Aset</div><div class="gk-strong big" t-esc="formatRp(berandaNeraca('aset'))"/></div>
-                        <div><div class="gk-muted">Kewajiban</div><div class="gk-strong big" t-esc="formatRp(berandaNeraca('kewajiban'))"/></div>
-                        <div><div class="gk-muted">Ekuitas</div><div class="gk-strong big" t-esc="formatRp(berandaNeraca('ekuitas'))"/></div>
-                    </div>
-                    <div class="gk-expense-list" style="margin-top:16px;">
-                        <div class="gk-expense-row">
-                            <div class="gk-expense-label"><span>Laba Ditahan (YTD)</span><span class="gk-expense-right"><b t-esc="formatRp(berandaNeraca('laba_ditahan'))"/></span></div>
-                            <div class="gk-bar-track"><div class="gk-bar-fill" t-att-style="'width:' + Math.min(100, Math.max(4, Math.abs(berandaNeraca('laba_ditahan'))/(berandaNeraca('aset')||1)*100)) + '%;background:#0F7C6C'"/></div>
+                            <div class="gk-cash-amount" t-esc="formatRp(outletContribution.cogs_estimate, true)"/>
+                            <div class="gk-cash-note">qty × standard_price</div>
+                        </div>
+                        <div class="gk-cash-card is-pass">
+                            <div class="gk-cash-top">
+                                <span class="gk-cash-status" aria-hidden="true"/>
+                                <span class="gk-cash-label">Margin kotor estimasi</span>
+                            </div>
+                            <div class="gk-cash-amount" t-esc="formatRp(outletContribution.gross_margin, true)"/>
+                            <div class="gk-cash-note" t-esc="'margin ' + formatPct(outletContribution.gross_margin_pct)"/>
+                        </div>
+                        <div class="gk-cash-card is-pass">
+                            <div class="gk-cash-top">
+                                <span class="gk-cash-status" aria-hidden="true"/>
+                                <span class="gk-cash-label">Baris dihitung</span>
+                            </div>
+                            <div class="gk-cash-amount" t-esc="_count(outletContribution.lines_counted)"/>
+                            <div class="gk-cash-note">pos.order.line</div>
                         </div>
                     </div>
-                    <div class="gk-muted small" style="margin-top:10px;">Total Liabilitas+Ekuitas <b t-esc="formatRp(berandaNeraca('total_liab_ekuitas'))"/></div>
-                </div>
-                <!-- Laba Bulanan bar chart — pindah dari row Tren (OVERHAUL 15 Sep K2);
-                     card Kepatuhan PSAK + tabel Rincian Laba Bulanan dihapus -->
-                <div class="gk-card gk-chart-card">
-                    <div class="gk-card-head">
-                        <h3>Laba Bulanan</h3>
-                        <span class="gk-muted">6 bulan terakhir</span>
-                    </div>
-                    <div class="gk-chart-beranda-monthly gk-chart-box" style="height:260px;"><canvas/></div>
+                    <p class="gk-muted">Estimasi kontribusi outlet = omzet POS exact − HPP (qty × standard_price). Beban operasional konsolidasi (gaji, sewa, penyusutan) tidak diatribusikan, jadi ini margin kontribusi — bukan laba outlet.</p>
                 </div>
             </div>
 
-            <!-- SPEC_OVERHAUL F1: Tombol "View audit trail" ala referensi ChatGPT PSAK.
-                 Membuka laporan Cash Flow MIS (= jejak audit PSAK 2 arus kas). -->
-            <div class="gk-audit-trail-wrap">
-                <button class="gk-btn-export gk-btn-ghost gk-audit-trail-btn"
-                        t-on-click="() => this.openReports('cash_flow_mis')">
-                    <i class="fa fa-list-alt"/> View audit trail
+            <!-- 2. TREN KINERJA BULANAN (mock: composed bar + line) -->
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Tren Kinerja Bulanan</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge info">Bar + Line · 6 Bulan</span>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Pendapatan dan total biaya per bulan dari buku besar (compute MIS). Garis teal = laba bersih bulanan.<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div t-if="monthlyRows().length" class="gk-chart-box h-260 gk-chart-monthly"><canvas role="img" aria-label="Grafik batang pendapatan dan biaya per bulan dengan garis laba bersih"/></div>
+                    <p t-else="" class="gk-muted">Belum ada data bulanan pada rentang ini.</p>
+                </div>
+            </div>
+
+            <!-- 3. REVENUE PER OUTLET + DISTRIBUSI CHANNEL (mock: 2 kolom) -->
+            <div class="gk-grid-2">
+
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Revenue per Outlet</h2>
+                        <span class="gk-badge info" t-esc="outletBars().length + ' Outlet'"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <div t-if="outletBars().length" class="gk-chart-box h-190 gk-chart-outlet"><canvas role="img" aria-label="Grafik batang omzet per outlet"/></div>
+                        <p t-else="" class="gk-muted">Belum ada transaksi POS pada periode ini.</p>
+                        <div class="gk-grid-2" style="gap:12px;margin-top:16px;">
+                            <t t-foreach="outletBars()" t-as="o" t-key="o.outlet">
+                                <div class="gk-cash-card is-pass">
+                                    <div class="gk-cash-top">
+                                        <span class="gk-cash-status" aria-hidden="true"/>
+                                        <span class="gk-cash-label" t-esc="o.outlet"/>
+                                        <span class="gk-badge pending" t-esc="o.order_count + ' trx'"/>
+                                    </div>
+                                    <div class="gk-cash-amount" t-esc="formatRp(o.revenue, true)"/>
+                                    <div class="gk-cash-note" t-esc="formatPct(o.pct) + ' dari total omzet'"/>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title" t-esc="hasKategori ? 'Analisis Kategori Produk' : 'Distribusi Channel Penjualan'"/>
+                        <span class="gk-badge info">Periode Penuh</span>
+                    </div>
+                    <div class="gk-section-body">
+                        <div t-if="hasKategori or channels().length" class="gk-channel-wrap">
+                            <div class="gk-chart-box square gk-chart-kategori"><canvas role="img" aria-label="Diagram donat komposisi kategori produk"/></div>
+                            <div class="gk-channel-legend">
+                                <t t-if="hasKategori">
+                                    <t t-foreach="kategori()" t-as="c" t-key="c.name">
+                                        <div class="gk-channel-row">
+                                            <div class="gk-channel-main">
+                                                <span class="gk-legend-color" t-att-style="'background:' + c.color" aria-hidden="true"/>
+                                                <span class="gk-channel-name" t-esc="c.name"/>
+                                            </div>
+                                            <div class="gk-channel-right">
+                                                <div class="gk-mini-track"><div class="gk-mini-fill" t-att-style="'width:' + c.pct + '%;background:' + c.color"/></div>
+                                                <span class="gk-channel-value" t-esc="formatPct(c.pct)"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+                                <t t-else="">
+                                    <t t-foreach="channels()" t-as="c" t-key="c.name">
+                                        <div class="gk-channel-row">
+                                            <div class="gk-channel-main">
+                                                <span class="gk-legend-color" t-att-style="'background:' + c.color" aria-hidden="true"/>
+                                                <span class="gk-channel-name" t-esc="c.name"/>
+                                            </div>
+                                            <div class="gk-channel-right">
+                                                <span class="gk-muted" t-esc="c.order_count + 'x'"/>
+                                                <span class="gk-channel-value" t-esc="formatRp(c.amount, true)"/>
+                                                <span class="gk-badge up" t-esc="formatPct(c.pct)"/>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </t>
+
+                                <!-- Detail delivery: bruto − komisi platform = net (live) -->
+                                <div t-if="deliveryDetail().has" class="gk-sub-list">
+                                    <span class="gk-sub-title">Detail Delivery</span>
+                                    <div class="gk-sub-row">
+                                        <span class="gk-sub-label">Gross revenue</span>
+                                        <span class="gk-sub-value" t-esc="formatRp(deliveryDetail().gross, true)"/>
+                                    </div>
+                                    <div class="gk-sub-row">
+                                        <span class="gk-sub-label">Komisi platform</span>
+                                        <span class="gk-sub-value" t-esc="'− ' + formatRp(deliveryDetail().commission, true)"/>
+                                    </div>
+                                    <div class="gk-sub-row is-total">
+                                        <span class="gk-sub-label">Net delivery</span>
+                                        <span class="gk-sub-value" t-esc="formatRp(deliveryDetail().net, true)"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p t-else="" class="gk-muted">Belum ada penjualan menu pada periode ini.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. KAS, BANK & SETTLEMENT (mock: kartu status rekonsiliasi) -->
+            <section>
+                <div class="gk-eyebrow">
+                    <span class="gk-eyebrow-text">Kas, Bank &amp; Settlement</span>
+                    <span class="gk-eyebrow-note">Posisi saldo pasca-rekonsiliasi · bukan omzet periode</span>
+                </div>
+                <div class="gk-grid-4" style="margin-top:12px;">
+                    <t t-foreach="cashCards()" t-as="c" t-key="c.label">
+                        <div t-att-class="'gk-cash-card ' + (c.status === 'pass' ? 'is-pass' : 'is-review')">
+                            <div class="gk-cash-top">
+                                <span class="gk-cash-status" aria-hidden="true"/>
+                                <span class="gk-cash-label" t-esc="c.label"/>
+                                <span t-att-class="'gk-badge ' + (c.status === 'pass' ? 'pass' : 'review')"
+                                      t-esc="c.status === 'pass' ? '✓ OK' : '⚠ Review'"/>
+                            </div>
+                            <div t-if="c.val !== null" class="gk-cash-amount" t-esc="formatRp(c.val, true)"/>
+                            <div t-else="" class="gk-cash-pending"><i class="fa fa-exclamation-triangle" aria-hidden="true"/>Perlu rekonsiliasi</div>
+                            <p class="gk-cash-note" t-esc="c.note"/>
+                        </div>
+                    </t>
+                </div>
+                <div class="gk-cash-summary">
+                    <div class="gk-cash-summary-total">
+                        <span>Total posisi diketahui:</span>
+                        <b t-esc="formatRp(cashSummaryTotal(), true)"/>
+                    </div>
+                    <div class="gk-cash-summary-note">
+                        <i class="fa fa-info-circle" aria-hidden="true"/>
+                        <span t-if="cashCardsAreDemo">Angka contoh — belum ada posisi kas tercatat pada periode ini</span>
+                        <span t-else="">Saldo buku (posted) per akhir periode · posisi review belum terklasifikasi</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 5. ARUS KAS — METODE TAK LANGSUNG (mock: tab + waterfall) -->
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Arus Kas — Metode Tak Langsung</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge draft">Draft PSAK 2</span>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Disusun dengan metode tak langsung sesuai PSAK 2. Angka diturunkan dari agregat buku besar; baris penyeimbang ditandai sebagai plug.<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-tabs">
+                        <button t-att-class="'gk-tab' + (state.cfTab === 'operasi' ? ' active' : '')"
+                                t-on-click="() => this.selectCfTab('operasi')">
+                            <i class="fa fa-cogs" aria-hidden="true"/><span class="gk-hidden-mobile">Aktivitas </span>Operasi
+                        </button>
+                        <button t-att-class="'gk-tab' + (state.cfTab === 'investasi' ? ' active' : '')"
+                                t-on-click="() => this.selectCfTab('investasi')">
+                            <i class="fa fa-building" aria-hidden="true"/><span class="gk-hidden-mobile">Aktivitas </span>Investasi
+                        </button>
+                        <button t-att-class="'gk-tab' + (state.cfTab === 'pendanaan' ? ' active' : '')"
+                                t-on-click="() => this.selectCfTab('pendanaan')">
+                            <i class="fa fa-money" aria-hidden="true"/><span class="gk-hidden-mobile">Aktivitas </span>Pendanaan
+                        </button>
+                    </div>
+
+                    <div class="gk-cf-grid">
+                        <div class="gk-cf-rows">
+                            <t t-foreach="cfRows()" t-as="r" t-key="r.label">
+                                <div class="gk-cf-row">
+                                    <span class="gk-cf-label" t-esc="r.label"/>
+                                    <span t-att-class="'gk-cf-value ' + (r.val >= 0 ? 'pos' : 'neg')" t-esc="formatSigned(r.val)"/>
+                                </div>
+                            </t>
+                            <div class="gk-cf-total">
+                                <span class="gk-cf-total-label" t-esc="cfTotalLabel()"/>
+                                <span t-att-class="'gk-cf-total-value ' + (cfTotal() >= 0 ? 'pos' : 'neg')"
+                                      t-esc="formatSigned(cfTotal())"/>
+                            </div>
+                        </div>
+                        <div class="gk-cf-chart">
+                            <div class="gk-cf-chart-title" t-esc="'Waterfall · ' + cfTabLabel()"/>
+                            <div class="gk-chart-box h-220 gk-chart-waterfall"><canvas role="img" aria-label="Diagram waterfall arus kas periode ini"/></div>
+                        </div>
+                    </div>
+
+                    <p class="gk-muted small" style="margin-top:12px;">
+                        Kas sekarang <b t-esc="formatRp(berandaArus('cash_now'), true)"/> ·
+                        periode sebelumnya <b t-esc="formatRp(berandaArus('cash_prev'), true)"/> ·
+                        Δ kas <b t-esc="formatRp(berandaArus('delta_cash'), true)"/>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 6. SNAPSHOT NERACA (mock: panel Aset + panel Ekuitas/Balance Check) -->
+            <section>
+                <div class="gk-eyebrow">
+                    <span class="gk-eyebrow-text">Snapshot Neraca</span>
+                    <span class="gk-eyebrow-note">Beberapa angka merupakan opening balance — baca berdasarkan tanggalnya</span>
+                </div>
+
+                <div class="gk-grid-2" style="margin-top:12px;">
+                    <div class="gk-card gk-neraca">
+                        <div class="gk-neraca-head navy">
+                            <i class="fa fa-building-o" aria-hidden="true"/><span>Aset</span>
+                        </div>
+                        <div class="gk-neraca-body">
+                            <t t-foreach="neracaAssets()" t-as="r" t-key="r.label">
+                                <div t-att-class="'gk-list-row' + (r.bold ? ' is-bold' : '')">
+                                    <div class="gk-list-label">
+                                        <t t-esc="r.label"/>
+                                        <span class="gk-list-note" t-esc="r.note"/>
+                                    </div>
+                                    <span t-att-class="'gk-list-value ' + (r.val &lt; 0 ? 'neg' : r.bold ? 'strong' : '')"
+                                          t-esc="r.val &lt; 0 ? '(' + formatRp(Math.abs(r.val), true) + ')' : formatRp(r.val, true)"/>
+                                </div>
+                            </t>
+                            <div class="gk-list-total">
+                                <span class="gk-list-total-label">Total Aset</span>
+                                <span class="gk-list-total-value" t-esc="formatRp(berandaNeraca('aset'), true)"/>
+                            </div>
+                            <p class="gk-muted small" style="margin-top:10px;">
+                                Kewajiban + Ekuitas <b t-esc="formatRp(berandaNeraca('total_liab_ekuitas'), true)"/>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="gk-card gk-neraca">
+                        <div class="gk-neraca-head teal">
+                            <i class="fa fa-shield" aria-hidden="true"/><span>Ekuitas &amp; Balance Check</span>
+                        </div>
+                        <div class="gk-neraca-body">
+                            <t t-foreach="neracaEquity()" t-as="r" t-key="r.label">
+                                <div class="gk-list-row">
+                                    <div class="gk-list-label">
+                                        <t t-esc="r.label"/>
+                                        <span class="gk-list-note" t-esc="r.note"/>
+                                    </div>
+                                    <span t-att-class="'gk-list-value ' + (r.val &lt; 0 ? 'neg' : '')"
+                                          t-esc="formatRp(r.val, true)"/>
+                                </div>
+                            </t>
+                            <div class="gk-list-total teal">
+                                <span class="gk-list-total-label">Total Ekuitas</span>
+                                <span class="gk-list-total-value teal" t-esc="formatRp(neracaEquityTotal(), true)"/>
+                            </div>
+
+                            <div t-att-class="'gk-balance-check' + (balanceCheck().ok ? ' is-ok' : '')">
+                                <div class="gk-balance-check-head">
+                                    <span>Balance Check</span>
+                                    <span t-att-class="'gk-badge ' + (balanceCheck().ok ? 'pass' : 'review')"
+                                          t-esc="balanceCheck().ok ? 'Seimbang' : 'Needs Review'"/>
+                                </div>
+                                <div class="gk-balance-check-bar">
+                                    <span>Aset vs Liabilitas + Ekuitas</span>
+                                    <span t-esc="formatPct(balanceCheck().pct)"/>
+                                </div>
+                                <div class="gk-progress-bar">
+                                    <div class="gk-progress-seg pass" t-att-style="'width:' + balanceCheck().pct + '%'"/>
+                                </div>
+                                <p class="gk-balance-check-note"
+                                   t-esc="'Selisih ' + formatRp(balanceCheck().diff, true) + ' — validasi liabilitas &amp; opening balance sebelum laporan final.'"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 7. PANEL KEPATUHAN PSAK — DATA DEMO (belum ada sumber di backend) -->
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Panel Kepatuhan PSAK</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge demo">data demo</span>
+                        <div class="gk-legend">
+                            <span class="gk-legend-item">Kesiapan</span>
+                            <div class="gk-mini-track"><div class="gk-mini-fill" t-att-style="'width:' + psakCounts.readiness + '%;background:#14b8a6'"/></div>
+                            <span class="gk-mono" t-esc="'~' + formatPct(psakCounts.readiness, 0)"/>
+                        </div>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Indikatif saja, bukan opini audit profesional. Status mencerminkan kelengkapan dokumentasi berdasarkan kondisi data saat ini (item pass + review dari total item).<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-psak-cols">
+                        <div class="gk-psak-col">
+                            <div class="gk-psak-col-head">
+                                <span class="gk-badge pass">✓ Pass</span>
+                                <span class="gk-psak-count" t-esc="psakCounts.pass + ' item terverifikasi'"/>
+                            </div>
+                            <div class="gk-psak-items">
+                                <t t-foreach="psak.pass" t-as="it" t-key="it.label">
+                                    <div class="gk-psak-item pass">
+                                        <i class="fa fa-check gk-psak-icon" aria-hidden="true"/>
+                                        <div>
+                                            <div class="gk-psak-label" t-esc="it.label"/>
+                                            <div class="gk-psak-note" t-esc="it.note"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="gk-psak-col">
+                            <div class="gk-psak-col-head">
+                                <span class="gk-badge review">⚠ Review</span>
+                                <span class="gk-psak-count" t-esc="psakCounts.review + ' item perlu klarifikasi'"/>
+                            </div>
+                            <div class="gk-psak-items">
+                                <t t-foreach="psak.review" t-as="it" t-key="it.label">
+                                    <div class="gk-psak-item review">
+                                        <i class="fa fa-exclamation-triangle gk-psak-icon" aria-hidden="true"/>
+                                        <div>
+                                            <div class="gk-psak-label" t-esc="it.label"/>
+                                            <div class="gk-psak-note" t-esc="it.note"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+
+                        <div class="gk-psak-col">
+                            <div class="gk-psak-col-head">
+                                <span class="gk-badge pending">○ Pending</span>
+                                <span class="gk-psak-count" t-esc="psakCounts.pending + ' item belum dimulai'"/>
+                            </div>
+                            <div class="gk-psak-items">
+                                <t t-foreach="psak.pending" t-as="it" t-key="it.label">
+                                    <div class="gk-psak-item pending">
+                                        <i class="fa fa-circle-o gk-psak-icon" aria-hidden="true"/>
+                                        <div>
+                                            <div class="gk-psak-label" t-esc="it.label"/>
+                                            <div class="gk-psak-note" t-esc="it.note"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="gk-section-divider">
+                        <div class="gk-progress-bar">
+                            <div class="gk-progress-seg pass" t-att-style="'width:' + psakWidth('pass')"/>
+                            <div class="gk-progress-seg review" t-att-style="'width:' + psakWidth('review')"/>
+                            <div class="gk-progress-seg pending" t-att-style="'width:' + psakWidth('pending')"/>
+                        </div>
+                        <div class="gk-progress-legend">
+                            <span class="gk-progress-item"><span class="gk-progress-dot pass"/>Pass: <t t-esc="psakCounts.pass"/></span>
+                            <span class="gk-progress-item"><span class="gk-progress-dot review"/>Review: <t t-esc="psakCounts.review"/></span>
+                            <span class="gk-progress-item"><span class="gk-progress-dot pending"/>Pending: <t t-esc="psakCounts.pending"/></span>
+                            <span class="gk-progress-note">Indikatif — bukan opini audit</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. TABEL LABA RUGI BULANAN (mock: finance-table + kartu mobile) -->
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Tabel Laba Rugi Bulanan</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge info">live · buku besar</span>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Pendapatan, HPP, beban operasional, komisi platform, dan penyusutan per bulan dari buku besar (posted). Komponen biaya bersifat eksklusif — jumlah HPP + beban ops + komisi + penyusutan selalu sama dengan Total Biaya. Kategori HPP ditentukan dari tipe akun <b>Biaya Langsung</b>, sedangkan penyusutan dan komisi dari kata kunci nama akun ("penyusutan", "komisi") — kolom bernilai 0 bila akun tersebut belum ada di bagan akun. Angka ditampilkan ringkas; arahkan kursor ke sel untuk nilai penuh.<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-desktop-table gk-table-wrap">
+                        <table class="gk-finance-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Bulan</th>
+                                    <th scope="col" class="right">Net Revenue</th>
+                                    <th scope="col" class="right">HPP</th>
+                                    <th scope="col" class="right">Beban Ops</th>
+                                    <th scope="col" class="right">Komisi</th>
+                                    <th scope="col" class="right">Penyusutan</th>
+                                    <th scope="col" class="right">Total Biaya</th>
+                                    <th scope="col" class="right">Laba Bersih</th>
+                                    <th scope="col" class="right">Margin</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="plRows()" t-as="row" t-key="row.bulan">
+                                    <tr t-att-class="row.isTotal ? 'total-row' : ''">
+                                        <td><span class="gk-cell-lead" t-esc="row.bulan"/></td>
+                                        <td class="right strong" t-att-title="formatRp(row.revenue)" t-esc="formatRp(row.revenue, true)"/>
+                                        <td class="right muted" t-att-title="formatRp(row.hpp)" t-esc="formatRp(row.hpp, true)"/>
+                                        <td class="right muted" t-att-title="formatRp(row.operational)" t-esc="formatRp(row.operational, true)"/>
+                                        <td class="right muted" t-att-title="formatRp(row.commission)" t-esc="formatRp(row.commission, true)"/>
+                                        <td class="right muted" t-att-title="formatRp(row.depreciation)" t-esc="formatRp(row.depreciation, true)"/>
+                                        <td class="right" t-att-title="formatRp(row.expense)" t-esc="formatRp(row.expense, true)"/>
+                                        <td t-att-class="'right ' + (row.net &lt; 0 ? 'red' : 'teal')" t-att-title="formatRp(row.net)" t-esc="formatRp(row.net, true)"/>
+                                        <td class="right muted" t-esc="formatPct(row.margin)"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="gk-mobile-cards">
+                        <t t-foreach="plRows()" t-as="row" t-key="row.bulan">
+                            <div t-att-class="'gk-mobile-card' + (row.isTotal ? ' is-total' : '')">
+                                <div class="gk-mobile-card-head">
+                                    <span class="gk-mobile-card-title" t-esc="row.bulan"/>
+                                    <span class="gk-mobile-card-amount" t-esc="formatRp(row.revenue, true)"/>
+                                </div>
+                                <div class="gk-mobile-card-grid">
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">HPP</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(row.hpp, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Beban Ops</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(row.operational, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Komisi Platform</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(row.commission, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Penyusutan</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(row.depreciation, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Total Biaya</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(row.expense, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Laba Bersih</span>
+                                        <span t-att-class="'gk-mobile-field-value' + (row.net &lt; 0 ? ' red' : ' teal')"
+                                              t-esc="formatRp(row.net, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Margin</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatPct(row.margin)"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                        <p t-if="!plRows().length" class="gk-muted">Belum ada data laba rugi pada rentang ini.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 9. FOOTER (mock: panel navy + tombol audit trail) -->
+            <footer class="gk-footer">
+                <div class="gk-footer-meta">
+                    <div class="gk-footer-items">
+                        <span class="gk-footer-item"><i class="fa fa-database" aria-hidden="true"/>Data source: Odoo ERP</span>
+                        <span class="gk-footer-item"><i class="fa fa-file-text-o" aria-hidden="true"/>Disusun mengacu PSAK — draft portfolio</span>
+                        <span class="gk-footer-item"><i class="fa fa-money" aria-hidden="true"/>Dinyatakan dalam Rupiah (IDR)</span>
+                    </div>
+                    <div class="gk-footer-sub">
+                        <span>Last refresh: <b t-esc="lastUpdatedLabel"/></span>
+                        <span class="gk-footer-sep">·</span>
+                        <span t-esc="'Periode ' + rangeLabel + ' · ' + state.outletFilter.name"/>
+                    </div>
+                </div>
+                <button class="gk-btn gk-btn-ghost" t-on-click="() => this.openModal('audit')">
+                    <i class="fa fa-list-alt" aria-hidden="true"/> View Audit Trail
                 </button>
+            </footer>
+
+            <!-- 10. MODAL AUDIT TRAIL — DATA DEMO -->
+            <t t-if="state.modal === 'audit'">
+                <div class="gk-modal-overlay" t-on-click="closeModal" role="presentation">
+                    <div class="gk-modal" t-on-click.stop="noopModalClick" t-ref="modalRef"
+                         tabindex="-1"
+                         role="dialog" aria-modal="true" aria-labelledby="gk-modal-title">
+                        <div class="gk-modal-head">
+                            <h3 id="gk-modal-title">Audit Trail — Geprekyukss Finance</h3>
+                            <button class="gk-modal-close" t-on-click="closeModal" title="Tutup" aria-label="Tutup dialog">✕</button>
+                        </div>
+                        <div class="gk-modal-body">
+                            <div class="gk-legend">
+                                <span class="gk-badge demo">data demo</span>
+                                <span class="gk-muted">Log contoh — sumber live menyusul</span>
+                            </div>
+                            <t t-foreach="auditTrail" t-as="e" t-key="e.time">
+                                <div class="gk-modal-row">
+                                    <span t-att-class="'gk-badge ' + e.kind"
+                                          t-esc="e.kind === 'pass' ? '✓' : e.kind === 'review' ? '!' : 'i'"/>
+                                    <div class="gk-modal-row-main">
+                                        <div class="gk-modal-time" t-esc="e.time + ' · ' + e.user"/>
+                                        <div class="gk-modal-action" t-esc="e.action"/>
+                                    </div>
+                                </div>
+                            </t>
+                            <div class="gk-audit-trail-wrap">
+                                <button class="gk-btn gk-btn-ghost"
+                                        t-on-click="() => this.openReports('cash_flow_mis')">
+                                    <i class="fa fa-line-chart" aria-hidden="true"/> Buka laporan Arus Kas (MIS)
+                                </button>
+                            </div>
+                            <div class="gk-modal-foot">Log lengkap tersedia di Odoo ERP → Accounting → Audit Logs</div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </t>
+
+        <!-- ============ LAPORAN — 4 KPI + tren harian + breakdown + rekap outlet ============ -->
+        <t t-elif="state.activeTab === 'laporan'">
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Tren Pendapatan, Biaya &amp; Laba Harian</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge info">Harian</span>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Pendapatan harian dari buku besar dan laba bersih per hari, dengan garis putus-putus rata-rata harian sebagai pembanding.<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-chart-box h-300 gk-chart-daily"><canvas role="img" aria-label="Grafik harian pendapatan, biaya, dan laba bersih"/></div>
+                </div>
+            </div>
+
+            <div class="gk-grid-2">
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Breakdown Beban Usaha</h2>
+                        <span class="gk-badge info" t-esc="state.data.finance.expenses.length + ' akun'"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-bar-list">
+                            <t t-foreach="state.data.finance.expenses.slice(0, 8)" t-as="e" t-key="e.code">
+                                <div class="gk-bar-row">
+                                    <div class="gk-bar-top">
+                                        <span class="gk-bar-name"><t t-esc="e.name"/><span class="gk-bar-count" t-esc="e.code"/></span>
+                                        <span class="gk-bar-value"><t t-esc="formatRp(e.amount)"/><span class="gk-pct" t-esc="pctLabel(e.amount, state.data.finance.expense_total)"/></span>
+                                    </div>
+                                    <div class="gk-bar-track" aria-hidden="true">
+                                        <div class="gk-bar-fill" t-att-style="'width:' + barPct(e.amount, state.data.finance.expense_total) + ';background:' + gkExpenseColor(e.category)"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                        <div class="gk-expense-total"><span>Total Beban</span><b t-esc="formatRp(state.data.finance.expense_total)"/></div>
+                    </div>
+                </div>
+
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Ringkasan Neraca Konsolidasi</h2>
+                        <span class="gk-eyebrow-note" t-esc="'per ' + state.data.period.date_to"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Total Aset<span class="gk-list-note">Saldo kumulatif s.d. akhir periode</span></div>
+                            <span class="gk-list-value strong" t-esc="formatRp(state.data.finance.balance.total_assets, true)"/>
+                        </div>
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Total Liabilitas + Ekuitas<span class="gk-list-note">Perbandingan balance check</span></div>
+                            <span class="gk-list-value strong" t-esc="formatRp(state.data.finance.balance.total_liab_equity, true)"/>
+                        </div>
+                        <div class="gk-list-row is-bold">
+                            <div class="gk-list-label">Laba/Rugi Bersih YTD<span class="gk-list-note">Akumulasi tahun berjalan (compute MIS)</span></div>
+                            <span t-att-class="'gk-list-value strong' + (state.data.finance.balance.net_income_ytd &lt; 0 ? ' neg' : '')"
+                                  t-esc="formatRp(state.data.finance.balance.net_income_ytd, true)"/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Rekap per Outlet</h2>
+                    <span class="gk-badge info">POS</span>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-desktop-table gk-table-wrap">
+                        <table class="gk-finance-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Outlet</th>
+                                    <th scope="col" class="right">Omzet</th>
+                                    <th scope="col" class="right">Transaksi</th>
+                                    <th scope="col" class="right">Avg Ticket</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.data.summary.outlets" t-as="o" t-key="o.config_id">
+                                    <tr>
+                                        <td><span class="gk-cell-lead" t-esc="o.name"/></td>
+                                        <td class="right strong" t-esc="formatRp(o.amount_total, true)"/>
+                                        <td class="right muted" t-esc="o.order_count"/>
+                                        <td class="right muted" t-esc="formatRp(o.avg_ticket, true)"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="gk-mobile-cards">
+                        <t t-foreach="state.data.summary.outlets" t-as="o" t-key="o.config_id">
+                            <div class="gk-mobile-card">
+                                <div class="gk-mobile-card-head">
+                                    <span class="gk-mobile-card-title" t-esc="o.name"/>
+                                    <span class="gk-mobile-card-amount" t-esc="formatRp(o.amount_total, true)"/>
+                                </div>
+                                <div class="gk-mobile-card-grid">
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Transaksi</span>
+                                        <span class="gk-mobile-field-value" t-esc="o.order_count"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Avg Ticket</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(o.avg_ticket, true)"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gk-grid-2">
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Arus Kas Periode Ini</h2>
+                        <span class="gk-badge info">Mutasi kas &amp; bank</span>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Uang Masuk<span class="gk-list-note">Debit akun kas/bank</span></div>
+                            <span class="gk-list-value pos" t-esc="formatRp(state.data.finance.cashflow.in, true)"/>
+                        </div>
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Uang Keluar<span class="gk-list-note">Kredit akun kas/bank</span></div>
+                            <span class="gk-list-value neg" t-esc="formatRp(state.data.finance.cashflow.out, true)"/>
+                        </div>
+                        <div class="gk-list-total">
+                            <span class="gk-list-total-label">Net Arus Kas</span>
+                            <span t-att-class="'gk-list-total-value ' + (state.data.finance.cashflow.net >= 0 ? 'pos' : 'neg')"
+                                  t-esc="formatSigned(state.data.finance.cashflow.net)"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Piutang Corporate Belum Lunas</h2>
+                        <span class="gk-badge info" t-esc="state.data.finance.receivables.list.length + ' faktur'"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <t t-if="state.data.finance.receivables.list.length">
+                            <div class="gk-table-wrap">
+                                <table class="gk-finance-table">
+                                    <thead>
+                                        <tr><th scope="col">Faktur</th><th scope="col">Partner</th><th scope="col">Jatuh Tempo</th><th scope="col" class="right">Nominal</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.finance.receivables.list" t-as="r" t-key="r.name">
+                                            <tr>
+                                                <td class="strong" t-esc="r.name"/>
+                                                <td t-esc="r.partner"/>
+                                                <td class="muted" t-esc="r.due"/>
+                                                <td class="right strong" t-esc="formatRp(r.residual, true)"/>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </t>
+                        <p t-else="" class="gk-muted">Tidak ada piutang open — semua faktur lunas.</p>
+                    </div>
+                </div>
             </div>
         </t>
 
-        <!-- ============ LAPORAN (laporan.png — 4 KPI + tren 3 garis + rekap per hari/outlet; F0: reuse finance + rekap) ============ -->
-        <t t-elif="state.activeTab === 'laporan'">
-            <div class="gk-kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Total Pendapatan</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(state.data.finance.income_total, true)"/>
-                    <div class="gk-kpi-foot"><span class="gk-muted">periode ini</span></div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Total Biaya</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(state.data.finance.expense_total, true)"/>
-                    <div class="gk-kpi-foot"><span class="gk-muted">termasuk HPP</span></div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Laba Bersih</div>
-                    <div class="gk-kpi-value" t-att-class="state.data.finance.net_profit &lt; 0 ? 'neg' : ''" t-esc="formatRp(state.data.finance.net_profit, true)"/>
-                    <div class="gk-kpi-foot"><span t-att-class="'gk-badge ' + pctClass(heroDelta())" t-esc="pctArrow(heroDelta()) or '—'"/> <span class="gk-muted">vs periode sebelumnya</span></div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Margin Laba</div>
-                    <div class="gk-kpi-value" t-esc="(state.data.finance.net_profit / (state.data.finance.income_total || 1) * 100).toFixed(1).replace('.', ',') + '%'"/>
-                    <div class="gk-kpi-foot"><span class="gk-muted">laba / pendapatan</span></div>
-                </div>
-            </div>
-
-            <div class="gk-card gk-chart-card">
-                <div class="gk-card-head">
-                    <h3>Tren Pendapatan, Biaya &amp; Laba Harian</h3>
-                    <div class="gk-legend-dot"><b>Pendapatan</b> · Biaya · Laba — mingguan</div>
-                </div>
-                <div class="gk-chart-daily gk-chart-box"><canvas/></div>
-            </div>
+        <!-- ============ PENJUALAN — 4 KPI + channel + metode bayar + menu terlaris ============ -->
+        <t t-elif="state.activeTab === 'penjualan'">
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
 
             <div class="gk-grid-2">
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Breakdown Beban Usaha</h3></div>
-                    <div class="gk-expense-list">
-                        <t t-foreach="state.data.finance.expenses.slice(0, 8)" t-as="e" t-key="e.code">
-                            <div class="gk-expense-row">
-                                <div class="gk-expense-label">
-                                    <span t-esc="e.name"/>
-                                    <span class="gk-expense-right"><b t-esc="formatRp(e.amount)"/><span class="gk-pct" t-esc="pctLabel(e.amount, state.data.finance.expense_total)"/></span>
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Komposisi Channel</h2>
+                        <span class="gk-badge info" t-esc="channels().length + ' channel'"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <div t-if="channels().length" class="gk-channel-wrap">
+                            <div class="gk-chart-box square gk-chart-channel"><canvas role="img" aria-label="Diagram donat komposisi channel penjualan"/></div>
+                            <div class="gk-channel-legend">
+                                <t t-foreach="channels()" t-as="c" t-key="c.name">
+                                    <div class="gk-channel-row">
+                                        <div class="gk-channel-main">
+                                            <span class="gk-legend-color" t-att-style="'background:' + c.color" aria-hidden="true"/>
+                                            <span class="gk-channel-name" t-esc="c.name"/>
+                                        </div>
+                                        <div class="gk-channel-right">
+                                            <span class="gk-muted" t-esc="c.order_count + 'x'"/>
+                                            <span class="gk-channel-value" t-esc="formatRp(c.amount, true)"/>
+                                            <span class="gk-badge up" t-esc="formatPct(c.pct)"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                        <p t-else="" class="gk-muted">Belum ada penjualan pada periode ini.</p>
+                    </div>
+                </div>
+
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Metode Pembayaran</h2>
+                        <span class="gk-badge info" t-esc="formatRp(paymentsTotal(), true)"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-bar-list">
+                            <t t-foreach="state.data.sales.payments" t-as="p" t-key="p.name">
+                                <div class="gk-bar-row">
+                                    <div class="gk-bar-top">
+                                        <span class="gk-bar-name"><t t-esc="p.name"/><span class="gk-bar-count" t-esc="p.order_count + 'x'"/></span>
+                                        <span class="gk-bar-value"><t t-esc="formatRp(p.amount)"/><span class="gk-pct" t-esc="pctLabel(p.amount, paymentsTotal())"/></span>
+                                    </div>
+                                    <div class="gk-bar-track" aria-hidden="true">
+                                        <div class="gk-bar-fill" t-att-style="'width:' + barPct(p.amount, state.data.sales.payments[0].amount) + ';background:' + gkPaymentColor(p.group)"/>
+                                    </div>
                                 </div>
-                                <div class="gk-bar-track">
+                            </t>
+                        </div>
+                        <p t-if="!state.data.sales.payments.length" class="gk-muted">Belum ada pembayaran tercatat.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Top 10 Menu</h2>
+                    <span class="gk-badge info">POS order line</span>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-grid-2">
+                        <div>
+                            <h4 class="gk-h4">Berdasarkan Omzet</h4>
+                            <div class="gk-table-wrap">
+                                <table class="gk-finance-table">
+                                    <thead>
+                                        <tr><th scope="col">#</th><th scope="col">Menu</th><th scope="col" class="right">Qty</th><th scope="col" class="right">Omzet</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.sales.top_by_amount" t-as="t" t-key="t.name">
+                                            <tr>
+                                                <td class="muted" t-esc="t_index + 1"/>
+                                                <td class="gk-cell-lead" t-esc="t.name"/>
+                                                <td class="right muted" t-esc="t.qty.toLocaleString('id-ID')"/>
+                                                <td class="right strong" t-esc="formatRp(t.amount, true)"/>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="gk-h4">Berdasarkan Qty</h4>
+                            <div class="gk-table-wrap">
+                                <table class="gk-finance-table">
+                                    <thead>
+                                        <tr><th scope="col">#</th><th scope="col">Menu</th><th scope="col" class="right">Qty</th><th scope="col" class="right">Omzet</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.sales.top_by_qty" t-as="t" t-key="t.name">
+                                            <tr>
+                                                <td class="muted" t-esc="t_index + 1"/>
+                                                <td class="gk-cell-lead" t-esc="t.name"/>
+                                                <td class="right strong" t-esc="t.qty.toLocaleString('id-ID')"/>
+                                                <td class="right muted" t-esc="formatRp(t.amount, true)"/>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ============ BIAYA & HPP — 5 KPI + tren + komposisi + detail akun ============ -->
+        <t t-elif="state.activeTab === 'hpp'">
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Tren Penjualan vs Biaya</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge info">Harian</span>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Rincian HPP per bulan belum tersedia di payload; tren ini memakai pendapatan harian dan laba bersih harian dari buku besar.<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-chart-box h-300 gk-chart-daily"><canvas role="img" aria-label="Grafik harian pendapatan, biaya, dan laba bersih"/></div>
+                </div>
+            </div>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Komposisi Biaya &amp; HPP</h2>
+                    <span class="gk-badge info" t-esc="state.data.finance.expenses.length + ' akun beban'"/>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-bar-list">
+                        <t t-foreach="state.data.finance.expenses.slice(0, 10)" t-as="e" t-key="e.code">
+                            <div class="gk-bar-row">
+                                <div class="gk-bar-top">
+                                    <span class="gk-bar-name"><t t-esc="e.name"/><span class="gk-bar-count" t-esc="e.code"/></span>
+                                    <span class="gk-bar-value"><t t-esc="formatRp(e.amount)"/><span class="gk-pct" t-esc="pctLabel(e.amount, state.data.finance.expense_total)"/></span>
+                                </div>
+                                <div class="gk-bar-track" aria-hidden="true">
                                     <div class="gk-bar-fill" t-att-style="'width:' + barPct(e.amount, state.data.finance.expense_total) + ';background:' + gkExpenseColor(e.category)"/>
                                 </div>
                             </div>
                         </t>
                     </div>
-                    <div class="gk-expense-total"><span>Total Beban</span><b t-esc="formatRp(state.data.finance.expense_total)"/></div>
-                </div>
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Ringkasan Neraca Konsolidasi</h3><span class="gk-muted">per <t t-esc="state.data.period.date_to"/></span></div>
-                    <div class="gk-balance-grid">
-                        <div><div class="gk-muted">Total Aset</div><div class="gk-strong big" t-esc="formatRp(state.data.finance.balance.total_assets)"/></div>
-                        <div><div class="gk-muted">Total Liabilitas + Ekuitas</div><div class="gk-strong big" t-esc="formatRp(state.data.finance.balance.total_liab_equity)"/></div>
-                        <div t-att-class="state.data.finance.balance.net_income_ytd &lt; 0 ? 'neg' : ''">
-                            <div class="gk-muted">Laba/Rugi Bersih YTD</div><div class="gk-strong big" t-esc="formatRp(state.data.finance.balance.net_income_ytd)"/></div>
-                    </div>
+                    <div class="gk-expense-total"><span>Total Beban (termasuk HPP)</span><b t-esc="formatRp(state.data.finance.expense_total)"/></div>
                 </div>
             </div>
 
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Rekap Laporan per Outlet/Hari</h3><span class="gk-muted">F2 menyusul: tabel No/Tgl/Outlet/Pendapatan/Biaya/Laba/Margin</span></div>
-                <table class="gk-table">
-                    <thead><tr><th>Outlet</th><th class="right">Omzet</th><th class="right">Transaksi</th><th class="right">Avg Ticket</th></tr></thead>
-                    <tbody>
-                        <t t-foreach="state.data.summary.outlets" t-as="o" t-key="o.config_id">
-                            <tr><td t-esc="o.name"/><td class="right" t-esc="formatRp(o.amount_total)"/><td class="right" t-esc="o.order_count"/><td class="right" t-esc="formatRp(o.avg_ticket)"/></tr>
-                        </t>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="gk-grid-2">
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Arus Kas Periode Ini</h3></div>
-                    <div class="gk-cashflow">
-                        <div class="gk-cashflow-item in"><i class="fa fa-arrow-down"/><div><div class="gk-muted">Uang Masuk</div><b t-esc="formatRp(state.data.finance.cashflow.in)"/></div></div>
-                        <div class="gk-cashflow-item out"><i class="fa fa-arrow-up"/><div><div class="gk-muted">Uang Keluar</div><b t-esc="formatRp(state.data.finance.cashflow.out)"/></div></div>
-                        <div class="gk-cashflow-item"><i class="fa fa-exchange"/><div><div class="gk-muted">Net</div><b t-esc="formatRp(state.data.finance.cashflow.net)"/></div></div>
-                    </div>
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Detail Beban per Akun</h2>
+                    <span class="gk-badge info">Buku besar</span>
                 </div>
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Piutang Corporate Belum Lunas</h3></div>
-                    <t t-if="state.data.finance.receivables.list.length">
-                        <table class="gk-table">
-                            <thead><tr><th>Faktur</th><th>Partner</th><th>Jatuh Tempo</th><th class="right">Nominal</th></tr></thead>
+                <div class="gk-section-body">
+                    <div class="gk-desktop-table gk-table-wrap">
+                        <table class="gk-finance-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Kode</th>
+                                    <th scope="col">Akun</th>
+                                    <th scope="col">Kategori</th>
+                                    <th scope="col" class="right">Nominal</th>
+                                    <th scope="col" class="right">Porsi</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                <t t-foreach="state.data.finance.receivables.list" t-as="r" t-key="r.name">
-                                    <tr><td t-esc="r.name"/><td t-esc="r.partner"/><td t-esc="r.due"/><td class="right" t-esc="formatRp(r.residual)"/></tr>
+                                <t t-foreach="state.data.finance.expenses" t-as="e" t-key="e.code">
+                                    <tr>
+                                        <td class="muted" t-esc="e.code"/>
+                                        <td class="gk-cell-lead" t-esc="e.name"/>
+                                        <td class="muted" t-esc="expenseCategoryLabel(e.category)"/>
+                                        <td class="right strong" t-esc="formatRp(e.amount, true)"/>
+                                        <td class="right muted" t-esc="formatPct(e.amount / (state.data.finance.expense_total || 1) * 100)"/>
+                                    </tr>
                                 </t>
                             </tbody>
-                        </table>
-                    </t>
-                    <t t-else=""><p class="gk-muted">Tidak ada piutang open. ✔</p></t>
-                </div>
-            </div>
-        </t>
-
-        <!-- ============ PENJUALAN (penjualan.png — F0: existing Tab 3; F3 tambah Produk Terlaris + Daftar Transaksi 15/hal) ============ -->
-        <t t-elif="state.activeTab === 'penjualan'">
-            <div class="gk-kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Total Penjualan</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(state.data.sales.amount_total, true)"/>
-                    <div class="gk-kpi-foot"><span class="gk-muted" t-esc="state.data.sales.order_count.toLocaleString('id-ID') + ' transaksi'"/></div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Jumlah Transaksi</div>
-                    <div class="gk-kpi-value" t-esc="state.data.sales.order_count.toLocaleString('id-ID')"/>
-                    <div class="gk-kpi-foot"><span t-att-class="'gk-badge ' + pctClass(state.data.summary.vs.order_count)" t-esc="pctArrow(state.data.summary.vs.order_count) or '—'"/> <span class="gk-muted">vs periode sebelumnya</span></div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Rata-rata Transaksi</div>
-                    <div class="gk-kpi-value" t-esc="formatRp(state.data.sales.avg_daily_orders * (state.data.sales.amount_total / Math.max(state.data.sales.order_count,1)) || 0)"/>
-                    <div class="gk-kpi-foot"><span class="gk-muted">per hari</span></div>
-                </div>
-                <div class="gk-card gk-kpi">
-                    <div class="gk-kpi-label">Produk Terjual</div>
-                    <div class="gk-kpi-value" t-esc="state.data.sales.top_by_qty.reduce((s,x) =&gt; s + x.qty, 0).toLocaleString('id-ID') + ' item'"/>
-                    <div class="gk-kpi-foot"><span class="gk-muted">total qty</span></div>
-                </div>
-            </div>
-
-            <div class="gk-grid-2">
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Komposisi Channel</h3></div>
-                    <div class="gk-channel-wrap">
-                        <div class="gk-chart-channel gk-chart-box square"><canvas/></div>
-                        <div class="gk-channel-legend">
-                            <t t-foreach="state.data.sales.channels" t-as="c" t-key="c.name">
-                                <div class="gk-channel-row">
-                                    <span class="gk-legend-color" t-att-style="'background:' + (gkChannelColor(c.name) || '#64748B')"/>
-                                    <span class="gk-channel-name" t-esc="c.name"/>
-                                    <span class="gk-muted" t-esc="c.order_count + ' order'"/>
-                                    <b t-esc="formatRp(c.amount, true)"/>
-                                    <span class="gk-badge up" t-esc="c.pct + '%'"/>
-                                </div>
-                            </t>
-                        </div>
-                    </div>
-                </div>
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Metode Pembayaran</h3></div>
-                    <div class="gk-expense-list">
-                        <t t-foreach="state.data.sales.payments" t-as="p" t-key="p.name">
-                            <div class="gk-expense-row">
-                                <div class="gk-expense-label">
-                                    <span><t t-esc="p.name"/> <span class="gk-muted">· <t t-esc="p.order_count"/>x</span></span>
-                                    <span class="gk-expense-right"><b t-esc="formatRp(p.amount)"/><span class="gk-pct" t-esc="pctLabel(p.amount, paymentsTotal())"/></span>
-                                </div>
-                                <div class="gk-bar-track">
-                                    <div class="gk-bar-fill" t-att-style="'width:' + barPct(p.amount, state.data.sales.payments[0].amount) + ';background:' + gkPaymentColor(p.group)"/>
-                                </div>
-                            </div>
-                        </t>
-                    </div>
-                </div>
-            </div>
-
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Top 10 Menu</h3><span class="gk-muted">F3: foto produk &amp; Daftar Transaksi 15/hal menyusul</span></div>
-                <div class="gk-grid-2">
-                    <div>
-                        <h4 class="gk-h4">Berdasarkan Omzet</h4>
-                        <table class="gk-table">
-                            <thead><tr><th>#</th><th>Menu</th><th class="right">Qty</th><th class="right">Omzet</th></tr></thead>
-                            <tbody>
-                                <t t-foreach="state.data.sales.top_by_amount" t-as="t" t-key="t.name">
-                                    <tr><td t-esc="t_index + 1"/><td t-esc="t.name"/><td class="right" t-esc="t.qty.toLocaleString('id-ID')"/><td class="right" t-esc="formatRp(t.amount)"/></tr>
-                                </t>
-                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="3"><strong>Total</strong></td>
+                                    <td class="right strong" t-esc="formatRp(state.data.finance.expense_total, true)"/>
+                                    <td class="right muted">100,0%</td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
-                    <div>
-                        <h4 class="gk-h4">Berdasarkan Qty</h4>
-                        <table class="gk-table">
-                            <thead><tr><th>#</th><th>Menu</th><th class="right">Qty</th><th class="right">Omzet</th></tr></thead>
-                            <tbody>
-                                <t t-foreach="state.data.sales.top_by_qty" t-as="t" t-key="t.name">
-                                    <tr><td t-esc="t_index + 1"/><td t-esc="t.name"/><td class="right" t-esc="t.qty.toLocaleString('id-ID')"/><td class="right" t-esc="formatRp(t.amount)"/></tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </t>
-
-        <!-- ============ BIAYA & HPP (hpp.png — F0 placeholder; F4 BOM real + kategori mapping) ============ -->
-        <t t-elif="state.activeTab === 'hpp'">
-            <div class="gk-kpi-row" style="grid-template-columns: repeat(5, 1fr);">
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Total HPP</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.hpp_total, true)"/><div class="gk-kpi-foot"><span class="gk-muted">BOM real F4 menyusul</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Total Biaya Ops</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.expense_total - state.data.finance.hpp_total, true)"/><div class="gk-kpi-foot"><span class="gk-muted">di luar HPP</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Rasio HPP</div><div class="gk-kpi-value" t-esc="(state.data.finance.hpp_total / (state.data.finance.income_total || 1) * 100).toFixed(1).replace('.', ',') + '%'"/><div class="gk-kpi-foot"><span class="gk-muted">HPP / pendapatan</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Margin Kotor</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.income_total - state.data.finance.hpp_total, true)"/><div class="gk-kpi-foot"><span class="gk-muted">pendapatan − HPP</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Biaya Lain</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.depreciation_total, true)"/><div class="gk-kpi-foot"><span class="gk-muted">penyusutan</span></div></div>
-            </div>
-
-            <div class="gk-card gk-chart-card">
-                <div class="gk-card-head">
-                    <h3>Tren HPP vs Penjualan</h3>
-                    <span class="gk-muted">Penjualan vs HPP — F4: 2 garis terpisah</span>
-                </div>
-                <div class="gk-chart-daily gk-chart-box"><canvas/></div>
-            </div>
-
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Komposisi Biaya &amp; HPP</h3><span class="gk-muted">F4: donut per kategori (Ayam Geprek 45% / Paket 25% / Snack 14% / Minuman 10%)</span></div>
-                <div class="gk-expense-list">
-                    <t t-foreach="state.data.finance.expenses.slice(0, 10)" t-as="e" t-key="e.code">
-                        <div class="gk-expense-row">
-                            <div class="gk-expense-label"><span t-esc="e.name"/><span class="gk-expense-right"><b t-esc="formatRp(e.amount)"/><span class="gk-pct" t-esc="pctLabel(e.amount, state.data.finance.expense_total)"/></span></div>
-                            <div class="gk-bar-track"><div class="gk-bar-fill" t-att-style="'width:' + barPct(e.amount, state.data.finance.expense_total) + ';background:' + gkExpenseColor(e.category)"/></div>
-                        </div>
-                    </t>
-                </div>
-            </div>
-
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Detail Biaya &amp; HPP per Outlet</h3><span class="gk-muted">F4: tabel per outlet + Top 5 Biaya</span></div>
-                <table class="gk-table">
-                    <thead><tr><th>Outlet</th><th class="right">Omzet</th><th class="right">Transaksi</th></tr></thead>
-                    <tbody>
-                        <t t-foreach="state.data.summary.outlets" t-as="o" t-key="o.config_id">
-                            <tr><td t-esc="o.name"/><td class="right" t-esc="formatRp(o.amount_total)"/><td class="right" t-esc="o.order_count"/></tr>
-                        </t>
-                    </tbody>
-                </table>
-            </div>
-        </t>
-
-        <!-- ============ KAS & BANK (kas dan bank.png — F0: reuse cash grid; F5 tambah Transaksi + Rekonsiliasi) ============ -->
-        <t t-elif="state.activeTab === 'kas'">
-            <div class="gk-kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Saldo Kas</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.cash_positions.filter(p =&gt; p.kind === 'kas').reduce((s,p) =&gt; s + p.balance, 0), true)"/><div class="gk-kpi-foot"><span class="gk-muted">total kas</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Saldo Bank</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.cash_positions.filter(p =&gt; p.kind !== 'kas').reduce((s,p) =&gt; s + p.balance, 0), true)"/><div class="gk-kpi-foot"><span class="gk-muted">bank + e-wallet</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Penerimaan</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.cashflow.in, true)"/><div class="gk-kpi-foot"><span class="gk-badge up">masuk</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Pengeluaran</div><div class="gk-kpi-value" t-esc="formatRp(state.data.finance.cashflow.out, true)"/><div class="gk-kpi-foot"><span class="gk-badge down">keluar</span></div></div>
-            </div>
-
-            <div class="gk-grid-2">
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Arus Kas — Penerimaan vs Pengeluaran</h3><span class="gk-muted">F5: line chart</span></div>
-                    <div class="gk-cashflow">
-                        <div class="gk-cashflow-item in"><i class="fa fa-arrow-down"/><div><div class="gk-muted">Uang Masuk</div><b t-esc="formatRp(state.data.finance.cashflow.in)"/></div></div>
-                        <div class="gk-cashflow-item out"><i class="fa fa-arrow-up"/><div><div class="gk-muted">Uang Keluar</div><b t-esc="formatRp(state.data.finance.cashflow.out)"/></div></div>
-                        <div class="gk-cashflow-item"><i class="fa fa-exchange"/><div><div class="gk-muted">Net</div><b t-esc="formatRp(state.data.finance.cashflow.net)"/></div></div>
-                    </div>
-                </div>
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Komposisi Saldo</h3><span class="gk-muted">Total <b t-esc="formatRp(cashTotal())"/></span></div>
-                    <div class="gk-cash-grid">
-                        <t t-foreach="state.data.finance.cash_positions" t-as="p" t-key="p.code">
-                            <div class="gk-cash-card"
-                                 t-att-style="'background:' + cashCardColor(p_index) + ';border-left:3px solid ' + cashCardColor(p_index, true)">
-                                <div class="gk-cash-card-top">
-                                    <span t-att-class="'gk-cash-ico ' + p.kind"><i t-att-class="cashKindIcon(p.kind)"/></span>
-                                    <div class="gk-cash-name">
-                                        <b t-esc="p.name"/>
-                                        <span class="gk-muted" t-esc="cashKindLabel(p.kind)"/>
+                    <div class="gk-mobile-cards">
+                        <t t-foreach="state.data.finance.expenses" t-as="e" t-key="e.code">
+                            <div class="gk-mobile-card">
+                                <div class="gk-mobile-card-head">
+                                    <span class="gk-mobile-card-title" t-esc="e.name"/>
+                                    <span class="gk-mobile-card-amount" t-esc="formatRp(e.amount, true)"/>
+                                </div>
+                                <div class="gk-mobile-card-grid">
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Kode</span>
+                                        <span class="gk-mobile-field-value" t-esc="e.code"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Kategori</span>
+                                        <span class="gk-mobile-field-value" t-esc="expenseCategoryLabel(e.category)"/>
                                     </div>
                                 </div>
-                                <div class="gk-cash-amount" t-esc="formatRp(p.balance)"/>
-                                <div class="gk-cash-pct-row">
-                                    <span class="gk-muted">Porsi dari Total</span>
-                                    <span class="gk-pct" t-esc="pctLabel(p.balance, cashTotal())"/>
+                            </div>
+                        </t>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ============ KAS & BANK — 4 KPI + komposisi saldo + arus kas + piutang ============ -->
+        <t t-elif="state.activeTab === 'kas'">
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Komposisi Saldo</h2>
+                    <div class="gk-section-tools">
+                        <span class="gk-badge info" t-esc="'Total ' + formatRp(cashTotal(), true)"/>
+                        <span class="gk-tip" tabindex="0">
+                            <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                            <span class="gk-tip-box">Saldo kumulatif per akhir periode (posted). Posisi e-wallet/settlement ditandai review sampai klasifikasinya final.<span class="gk-tip-arrow"/></span>
+                        </span>
+                    </div>
+                </div>
+                <div class="gk-section-body">
+                    <div t-if="state.data.finance.cash_positions.length" class="gk-grid-3">
+                        <t t-foreach="state.data.finance.cash_positions" t-as="p" t-key="p.code">
+                            <div t-att-class="'gk-cash-card ' + (p.kind === 'kas' ? 'is-pass' : 'is-review')">
+                                <div class="gk-cash-top">
+                                    <span class="gk-cash-status" aria-hidden="true"/>
+                                    <span class="gk-cash-label" t-esc="p.name"/>
+                                    <span class="gk-badge pending" t-esc="cashKindLabel(p.kind)"/>
                                 </div>
-                                <div class="gk-bar-track">
+                                <div class="gk-cash-amount" t-esc="formatRp(p.balance, true)"/>
+                                <div class="gk-bar-track" aria-hidden="true">
                                     <div class="gk-bar-fill" t-att-style="'width:' + barPct(p.balance, cashTotal()) + ';background:' + cashCardColor(p_index, true)"/>
+                                </div>
+                                <p class="gk-cash-note" t-esc="p.code + ' · ' + formatPct(p.balance / (cashTotal() || 1) * 100) + ' dari total saldo'"/>
+                            </div>
+                        </t>
+                    </div>
+                    <p t-else="" class="gk-muted">Belum ada saldo kas/bank tercatat pada periode ini.</p>
+                </div>
+            </div>
+
+            <div class="gk-grid-2">
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Arus Kas Periode</h2>
+                        <span class="gk-badge info">Mutasi kas &amp; bank</span>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Penerimaan<span class="gk-list-note">Debit akun kas/bank</span></div>
+                            <span class="gk-list-value pos" t-esc="formatRp(state.data.finance.cashflow.in, true)"/>
+                        </div>
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Pengeluaran<span class="gk-list-note">Kredit akun kas/bank</span></div>
+                            <span class="gk-list-value neg" t-esc="formatRp(state.data.finance.cashflow.out, true)"/>
+                        </div>
+                        <div class="gk-list-total">
+                            <span class="gk-list-total-label">Kas Neto</span>
+                            <span t-att-class="'gk-list-total-value ' + (state.data.finance.cashflow.net >= 0 ? 'pos' : 'neg')"
+                                  t-esc="formatSigned(state.data.finance.cashflow.net)"/>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Settlement &amp; Piutang</h2>
+                        <span class="gk-badge review">Perlu klarifikasi</span>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Settlement POS (1103.06)<span class="gk-list-note">Piutang settlement belum cair</span></div>
+                            <span class="gk-list-value" t-esc="formatRp(berandaKas('settlement_pending'), true)"/>
+                        </div>
+                        <div class="gk-list-row">
+                            <div class="gk-list-label">Piutang korporat<span class="gk-list-note">Faktur belum lunas</span></div>
+                            <span class="gk-list-value" t-esc="formatRp(berandaKas('receivables'), true)"/>
+                        </div>
+                        <p class="gk-muted small" style="margin-top:12px;">Kedua pos di atas belum diklasifikasi sebagai kas — konfirmasi klasifikasi sebelum dipakai dalam laporan final.</p>
+                    </div>
+                </div>
+            </div>
+        </t>
+
+        <!-- ============ ASET — 4 KPI + daftar aset tetap + jadwal penyusutan ============ -->
+        <t t-elif="state.activeTab === 'aset'">
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
+
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Daftar Aset Tetap</h2>
+                    <span class="gk-badge info" t-esc="state.data.ops.assets.rows.length + ' aset'"/>
+                </div>
+                <div class="gk-section-body">
+                    <div class="gk-desktop-table gk-table-wrap">
+                        <table class="gk-finance-table">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Nama Aset</th>
+                                    <th scope="col">Kode</th>
+                                    <th scope="col" class="right">Nilai Perolehan</th>
+                                    <th scope="col" class="right">Akumulasi</th>
+                                    <th scope="col" class="right">Nilai Buku</th>
+                                    <th scope="col" class="right">Penyusutan/Bulan</th>
+                                    <th scope="col" class="right">Masa Manfaat</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="state.data.ops.assets.rows" t-as="a" t-key="a.code">
+                                    <tr>
+                                        <td class="gk-cell-lead" t-esc="a.name"/>
+                                        <td class="muted" t-esc="a.code"/>
+                                        <td class="right" t-esc="formatRp(a.gross)"/>
+                                        <td class="right muted" t-esc="formatRp(a.accum)"/>
+                                        <td class="right strong" t-esc="formatRp(a.net)"/>
+                                        <td class="right green" t-esc="formatRp(a.dep_month)"/>
+                                        <td class="right muted" t-esc="a.life_years ? a.life_years + ' thn' : '—'"/>
+                                    </tr>
+                                </t>
+                            </tbody>
+                            <tfoot>
+                                <tr class="total-row">
+                                    <td colspan="2"><strong>Total</strong></td>
+                                    <td class="right strong" t-esc="formatRp(state.data.ops.assets.total_gross, true)"/>
+                                    <td class="right strong" t-esc="formatRp(state.data.ops.assets.total_accum, true)"/>
+                                    <td class="right teal" t-esc="formatRp(state.data.ops.assets.total_gross - state.data.ops.assets.total_accum, true)"/>
+                                    <td colspan="2"/>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    <div class="gk-mobile-cards">
+                        <t t-foreach="state.data.ops.assets.rows" t-as="a" t-key="a.code">
+                            <div class="gk-mobile-card">
+                                <div class="gk-mobile-card-head">
+                                    <span class="gk-mobile-card-title" t-esc="a.name"/>
+                                    <span class="gk-mobile-card-amount" t-esc="formatRp(a.net, true)"/>
+                                </div>
+                                <div class="gk-mobile-card-grid">
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Kode</span>
+                                        <span class="gk-mobile-field-value" t-esc="a.code"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Perolehan</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(a.gross, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Akumulasi</span>
+                                        <span class="gk-mobile-field-value" t-esc="formatRp(a.accum, true)"/>
+                                    </div>
+                                    <div class="gk-mobile-field">
+                                        <span class="gk-mobile-field-label">Penyusutan/Bulan</span>
+                                        <span class="gk-mobile-field-value teal" t-esc="formatRp(a.dep_month, true)"/>
+                                    </div>
                                 </div>
                             </div>
                         </t>
@@ -576,115 +1283,162 @@
                 </div>
             </div>
 
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Transaksi Kas &amp; Bank</h3><span class="gk-muted">F5: 15/hal + Rekonsiliasi Bank</span></div>
-                <table class="gk-table">
-                    <thead><tr><th>Tanggal</th><th>Rekening</th><th>Keterangan</th><th class="right">Nominal</th></tr></thead>
-                    <tbody>
-                        <tr><td colspan="4" class="gk-muted" style="text-align:center;">Detail transaksi menyusul F5 — data sudah ada di finance.cashflow</td></tr>
-                    </tbody>
-                </table>
+            <div class="gk-section">
+                <div class="gk-section-head">
+                    <h2 class="gk-section-title">Jadwal Penyusutan Mendatang</h2>
+                    <span class="gk-badge info">12 bulan ke depan</span>
+                </div>
+                <div class="gk-section-body">
+                    <t t-if="state.data.ops.assets.schedule and state.data.ops.assets.schedule.length">
+                        <div class="gk-table-wrap">
+                            <table class="gk-finance-table">
+                                <thead>
+                                    <tr><th scope="col">Bulan</th><th scope="col" class="right">Beban Penyusutan</th><th scope="col" class="right">Jml Aset</th></tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.ops.assets.schedule" t-as="s" t-key="s.month">
+                                        <tr>
+                                            <td class="gk-cell-lead" t-esc="s.label"/>
+                                            <td class="right green" t-esc="formatRp(s.amount)"/>
+                                            <td class="right muted" t-esc="s.count"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="total-row">
+                                        <td><strong>Total 12 bulan</strong></td>
+                                        <td class="right strong" t-esc="formatRp(state.data.ops.assets.schedule_total, true)"/>
+                                        <td class="right muted">—</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <p class="gk-muted small" style="margin-top:12px;">Sumber: register aset OCA — 12 bulan pertama setelah periode laporan.</p>
+                    </t>
+                    <p t-else="" class="gk-muted">Belum ada jadwal penyusutan di register aset.</p>
+                </div>
             </div>
         </t>
 
-        <!-- ============ ASET (aset.png — F0: reuse ops.assets; F6 tambah tren + jadwal) ============ -->
-        <t t-elif="state.activeTab === 'aset'">
-            <div class="gk-kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="gk-card gk-kpi teal"><div class="gk-kpi-label light">Total Nilai Aset</div><div class="gk-kpi-value" t-esc="formatRp(state.data.ops.assets.total_gross)"/><div class="gk-kpi-foot"><span class="gk-muted light">gross perolehan</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Aset Lancar</div><div class="gk-kpi-value" t-esc="formatRp(state.data.ops.inventory.total)"/><div class="gk-kpi-foot"><span class="gk-muted">persediaan</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Aset Tetap</div><div class="gk-kpi-value" t-esc="formatRp(state.data.ops.assets.total_gross)"/><div class="gk-kpi-foot"><span class="gk-muted">nilai perolehan</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Akumulasi Penyusutan</div><div class="gk-kpi-value" t-esc="formatRp(state.data.ops.assets.total_accum)"/><div class="gk-kpi-foot"><span class="gk-muted">total akumulasi</span></div></div>
-            </div>
-
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Daftar Aset Tetap</h3></div>
-                <table class="gk-table">
-                    <thead><tr><th>Nama Aset</th><th>Kode</th><th class="right">Nilai Perolehan</th><th class="right">Akumulasi</th><th class="right">Nilai Buku</th><th class="right">Penyusutan/Bulan</th><th class="right">Masa Manfaat</th></tr></thead>
-                    <tbody>
-                        <t t-foreach="state.data.ops.assets.rows" t-as="a" t-key="a.code">
-                            <tr>
-                                <td t-esc="a.name"/>
-                                <td class="gk-muted" t-esc="a.code"/>
-                                <td class="right" t-esc="formatRp(a.gross)"/>
-                                <td class="right" t-esc="formatRp(a.accum)"/>
-                                <td class="right" t-esc="formatRp(a.net)"/>
-                                <td class="right green" t-esc="formatRp(a.dep_month)"/>
-                                <td class="right" t-esc="a.life_years ? a.life_years + ' thn' : '—'"/>
-                            </tr>
-                        </t>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Jadwal Penyusutan Mendatang</h3><span class="gk-muted">sumber: register aset OCA · 12 bulan pertama setelah periode</span></div>
-                <t t-if="state.data.ops.assets.schedule and state.data.ops.assets.schedule.length">
-                    <table class="gk-table">
-                        <thead><tr><th>Bulan</th><th class="right">Beban Penyusutan</th><th class="right">Jml Aset</th></tr></thead>
-                        <tbody>
-                            <t t-foreach="state.data.ops.assets.schedule" t-as="s" t-key="s.month">
-                                <tr>
-                                    <td t-esc="s.label"/>
-                                    <td class="right green" t-esc="formatRp(s.amount)"/>
-                                    <td class="right" t-esc="s.count"/>
-                                </tr>
-                            </t>
-                            <tr class="gk-total-row">
-                                <td><b>Total 12 bulan</b></td>
-                                <td class="right"><b t-esc="formatRp(state.data.ops.assets.schedule_total)"/></td>
-                                <td class="right">—</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </t>
-                <p t-else="" class="gk-muted">Belum ada jadwal penyusutan di register aset.</p>
-            </div>
-        </t>
-
-        <!-- ============ PERSEDIAAN (persediaan.png — F0: reuse inventory; F7: 15/hal + pergerakan) ============ -->
+        <!-- ============ PERSEDIAAN — 4 KPI + nilai per gudang + waste ============ -->
         <t t-elif="state.activeTab === 'persediaan'">
-            <div class="gk-kpi-row" style="grid-template-columns: repeat(4, 1fr);">
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Nilai Persediaan</div><div class="gk-kpi-value" t-esc="formatRp(state.data.ops.inventory.total, true)"/><div class="gk-kpi-foot"><span class="gk-muted">total gudang</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Jumlah Item</div><div class="gk-kpi-value" t-esc="state.data.ops.inventory.per_warehouse.reduce((s,w) =&gt; s + (w.qty ? 1 : 0), 0) ? (state.data.ops.inventory.per_warehouse.length * 50).toLocaleString('id-ID') + ' SKU' : '100 SKU'"/><div class="gk-kpi-foot"><span class="gk-muted">50 per gudang</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Stok Habis</div><div class="gk-kpi-value">—</div><div class="gk-kpi-foot"><span class="gk-muted">F7: qty 0</span></div></div>
-                <div class="gk-card gk-kpi"><div class="gk-kpi-label">Stok Menipis</div><div class="gk-kpi-value">—</div><div class="gk-kpi-foot"><span class="gk-muted">F7: &lt;= min</span></div></div>
-            </div>
+            <t t-call="geprekyukss_dashboard.TabKpis"/>
 
             <div class="gk-grid-2">
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Nilai Persediaan per Gudang</h3><span class="gk-muted">WH = Pallangga, BTL = Mallengkeri</span></div>
-                    <table class="gk-table">
-                        <thead><tr><th>Gudang</th><th class="right">Nilai</th><th class="right">Qty</th></tr></thead>
-                        <tbody>
-                            <t t-foreach="state.data.ops.inventory.per_warehouse" t-as="w" t-key="w.warehouse">
-                                <tr><td t-esc="w.warehouse"/><td class="right" t-esc="formatRp(w.value)"/><td class="right" t-esc="w.qty.toLocaleString('id-ID')"/></tr>
-                            </t>
-                            <tr class="gk-total-row"><td><b>Total</b></td><td class="right"><b t-esc="formatRp(state.data.ops.inventory.total)"/></td><td class="right">—</td></tr>
-                        </tbody>
-                    </table>
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Nilai Persediaan per Gudang</h2>
+                        <span class="gk-badge info" t-esc="'Total ' + formatRp(state.data.ops.inventory.total, true)"/>
+                    </div>
+                    <div class="gk-section-body">
+                        <div class="gk-table-wrap">
+                            <table class="gk-finance-table">
+                                <thead>
+                                    <tr><th scope="col">Gudang</th><th scope="col" class="right">Nilai</th><th scope="col" class="right">Qty</th></tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="state.data.ops.inventory.per_warehouse" t-as="w" t-key="w.warehouse">
+                                        <tr>
+                                            <td class="gk-cell-lead" t-esc="w.warehouse"/>
+                                            <td class="right strong" t-esc="formatRp(w.value, true)"/>
+                                            <td class="right muted" t-esc="w.qty.toLocaleString('id-ID')"/>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                                <tfoot>
+                                    <tr class="total-row">
+                                        <td><strong>Total</strong></td>
+                                        <td class="right strong" t-esc="formatRp(state.data.ops.inventory.total, true)"/>
+                                        <td class="right muted">—</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                        <p class="gk-muted small" style="margin-top:12px;">WH = Pallangga, BTL = Mallengkeri. Valuasi memakai FIFO real-time.</p>
+                    </div>
                 </div>
-                <div class="gk-card">
-                    <div class="gk-card-head"><h3>Waste / Susut Periode Ini</h3><span class="gk-muted">Stok Menipis &amp; Habis menyusul F7</span></div>
-                    <t t-if="state.data.ops.waste.count">
-                        <table class="gk-table">
-                            <thead><tr><th>Produk</th><th class="right">Qty</th></tr></thead>
-                            <tbody>
-                                <t t-foreach="state.data.ops.waste.rows" t-as="s" t-key="s.product">
-                                    <tr><td t-esc="s.product"/><td class="right" t-esc="s.qty"/></tr>
-                                </t>
-                            </tbody>
-                        </table>
-                        <p class="gk-muted"><t t-esc="state.data.ops.waste.count"/> transaksi scrap selesai.</p>
-                    </t>
-                    <t t-else=""><p class="gk-muted">Tidak ada scrap tercatat periode ini.</p></t>
-                </div>
-            </div>
 
-            <div class="gk-card">
-                <div class="gk-card-head"><h3>Daftar Stok Barang</h3><span class="gk-muted">F7: 15/hal + search + filter Kategori/Status + Pergerakan Terakhir</span></div>
-                <p class="gk-muted">Tabel stok detail per gudang (15/hal) menyusul F7 — data stock.quant 100 records siap.</p>
+                <div class="gk-section">
+                    <div class="gk-section-head">
+                        <h2 class="gk-section-title">Waste / Susut Periode Ini</h2>
+                        <span t-att-class="'gk-badge ' + (state.data.ops.waste.count ? 'review' : 'pass')"
+                              t-esc="state.data.ops.waste.count + ' transaksi'"
+                              t-if="state.data.ops.waste.count"/>
+                        <span t-else="" class="gk-badge pass">Tidak ada</span>
+                    </div>
+                    <div class="gk-section-body">
+                        <t t-if="state.data.ops.waste.count">
+                            <div class="gk-table-wrap">
+                                <table class="gk-finance-table">
+                                    <thead><tr><th scope="col">Produk</th><th scope="col" class="right">Qty</th></tr></thead>
+                                    <tbody>
+                                        <t t-foreach="state.data.ops.waste.rows" t-as="s" t-key="s.product">
+                                            <tr>
+                                                <td class="gk-cell-lead" t-esc="s.product"/>
+                                                <td class="right strong" t-esc="s.qty"/>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p class="gk-muted small" style="margin-top:12px;">Scrap selesai (state done) pada periode ini — nilai susut mengikuti FIFO valuasi.</p>
+                        </t>
+                        <p t-else="" class="gk-muted">Tidak ada scrap tercatat pada periode ini.</p>
+                    </div>
+                </div>
             </div>
         </t>
+    </t>
+
+    <!-- =================================================================
+         KPI STRIP PER TAB (mock: KpiCard) — dipakai seluruh tab dashboard.
+         Definisi kartunya ada di dashboard.js::tabKpis() supaya markup ini
+         tidak perlu diduplikasi di setiap tab.
+    ================================================================== -->
+    <t t-name="geprekyukss_dashboard.TabKpis">
+        <section>
+            <div class="gk-eyebrow">
+                <span class="gk-eyebrow-text" t-esc="eyebrowText"/>
+                <span class="gk-eyebrow-note" t-esc="activeTabNote + ' · ' + rangeLabel"/>
+            </div>
+            <!-- F2 (audit GUI 26 Sep): pisahkan angka ter-filter vs konsolidasi -->
+            <div t-if="outletFilterActive" t-att-class="'gk-outlet-notice' + (tabIsConsolidated ? ' is-consolidated' : ' is-filtered')">
+                <i class="fa fa-filter gk-outlet-notice-icon" aria-hidden="true"/>
+                <div class="gk-outlet-notice-body">
+                    <span class="gk-outlet-notice-title" t-esc="'Filter outlet: ' + state.outletFilter.name"/>
+                    <span t-if="tabIsConsolidated" class="gk-outlet-notice-text">
+                        KPI hero dan laporan di tab ini bersumber dari <b>buku besar konsolidasi</b> dan <b>tidak</b> ter-filter per outlet.
+                        <t t-if="outletContribution">
+                            Estimasi kontribusi POS outlet terpilih — omzet <b t-esc="formatRp(outletContribution.omzet, true)"/>, margin kotor <b t-esc="formatRp(outletContribution.gross_margin, true)"/> (<t t-esc="formatPct(outletContribution.gross_margin_pct)"/>).
+                        </t>
+                    </span>
+                    <span t-else="" class="gk-outlet-notice-text">Angka pada tab ini sudah ter-filter per outlet.</span>
+                </div>
+            </div>
+            <div class="gk-kpi-strip" style="margin-top:12px;">
+                <t t-foreach="tabKpis()" t-as="k" t-key="k.label">
+                    <div t-att-class="'gk-kpi anim-' + (k_index + 1) + (k.pos === null ? ' is-neutral' : k.pos ? ' is-up' : ' is-down')">
+                        <div class="gk-kpi-top">
+                            <span t-att-class="'gk-kpi-icon ' + k.tone"><t t-out="k.icon"/></span>
+                            <span class="gk-badge info" t-esc="k.badge"/>
+                        </div>
+                        <div>
+                            <div class="gk-kpi-label" t-esc="k.label"/>
+                            <div t-att-class="'gk-kpi-value' + (k.raw &lt; 0 ? ' neg' : '')" t-esc="k.value"/>
+                            <div class="gk-kpi-sub" t-esc="k.sub"/>
+                        </div>
+                        <div class="gk-kpi-foot">
+                            <span t-att-class="'gk-kpi-delta ' + (k.pos === null ? 'flat' : k.pos ? 'up' : 'down')"
+                                  t-esc="k.delta"/>
+                            <span class="gk-tip" tabindex="0">
+                                <i class="fa fa-info-circle gk-info" aria-hidden="true"/>
+                                <span class="gk-tip-box"><t t-esc="k.tip"/><span class="gk-tip-arrow"/></span>
+                            </span>
+                        </div>
+                    </div>
+                </t>
+            </div>
+        </section>
     </t>
 
 </templates>

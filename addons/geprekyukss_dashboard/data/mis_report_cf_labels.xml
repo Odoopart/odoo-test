@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  F7 (audit GUI 26 Sep 2026) — pertegas label laporan Cash Flow (OCA).
+
+  Template OCA `mis_builder_cash_flow` memberi label yang mudah tertukar:
+    * LIQUIDITY — ekspresi `bal[]` = MUTASI kas PERIODE (arus masuk/keluar),
+      BUKAN saldo.  Di UI terbaca seolah saldo kas.
+    * BALANCE   — ekspresi `bale[]` = SALDO kas AKHIR periode.
+
+  Data OCA disimpan dengan noupdate="True", jadi <record> biasa tidak akan
+  menimpanya saat upgrade. Penulisan lewat <function> (noupdate default False)
+  memastikan label ini tetap benar setiap kali modul di-upgrade.
+-->
+<odoo>
+    <function model="mis.report.kpi" name="write">
+        <value eval="[ref('mis_builder_cash_flow.mis_kpi_aliquidity')]"/>
+        <value eval="{'description': 'MUTASI KAS — perubahan saldo periode'}"/>
+    </function>
+    <function model="mis.report.kpi" name="write">
+        <value eval="[ref('mis_builder_cash_flow.mis_kpi_balance')]"/>
+        <value eval="{'description': 'SALDO KAS AKHIR PERIODE'}"/>
+    </function>
+</odoo>

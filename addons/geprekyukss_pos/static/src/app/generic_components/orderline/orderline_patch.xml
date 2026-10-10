@@ -4,21 +4,68 @@
         Di-inherit dari template point_of_sale.Orderline, dipakai bareng oleh
         ProductScreen (cart) dan OrderReceipt (struk).
 
-        xpath 1: badge label pedas (dinonaktifkan sementara, t-if false) +
-                 qty stepper/tombol hapus — ditaruh DI DALAM line-details,
-                 sejajar baris nama produk (bukan baris terpisah di bawah).
+        xpath 1: badge label pedas berupa TEKS (mis. "Level 3"), tetap di dalam
+                 line-details, sejajar baris nama produk. Ikon cabe/flame sudah
+                 dihapus atas permintaan: badge tampil teks saja. Label teksnya
+                 dari SPICE_TEXT_LABELS (spice_level_popup.js).
         xpath 2: sembunyikan product-price bawaan (posisinya semula sejajar
                  nama, sekarang digantikan stepper).
-        xpath 3: baris harga baru di bawah line-details, bold merah, sesuai
-                 referensi desain.
+        xpath 3: qty stepper + tombol hapus, lalu baris harga baru.
+        xpath 4: sembunyikan `span.qty` bawaan saat stepper dirender — kalau
+                 tidak, qty tercetak DUA kali (lihat komentar di xpath 4).
+
+        KENAPA stepper ADA DI LUAR line-details (perbaikan 20 Sep 2026):
+        sebelumnya stepper+tombol hapus disisipkan SESUDAH .product-name, yaitu
+        di dalam `.line-details`. Di panel kasir `.line-details` hanya menempati
+        kolom KIRI grid (kolom harga ada di sebelahnya), sehingga "rata kanan"
+        milik stepper berhenti di tepi kolom nama — terukur tombol hapus duduk di
+        x=1229..1235 pada panel yang tepi kanannya 1352, dan x-nya BERGESER tiap
+        baris karena lebar kolom harga berbeda-beda. Ditempatkan sebagai saudara
+        `.line-details`, stepper menjadi anak LANGSUNG pembungkus grid, sehingga
+        bisa membentang selebar panel (lihat section 22 pos_theme.scss).
+        Struk tetap aman: keduanya dijaga `props.mode !== 'receipt'`.
     -->
     <t t-inherit="point_of_sale.Orderline" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('product-name')]" position="after">
+            <!--
+                TEKS SAJA, tanpa ikon. Dulu di sini ada
+                `<i class="fa fa-fire">` + label beremoji cabe ("1 🌶️").
+                Ikon dan emoji dihapus; teksnya sendiri berasal dari
+                SPICE_TEXT_LABELS. Berlaku juga di struk — memang diinginkan,
+                karena emoji cabe tidak selalu bisa dicetak printer thermal.
+            -->
             <div t-if="props.line.spice_level" class="spice-level-badge small fw-bold text-danger">
-                <i class="fa fa-fire me-1" role="img" aria-label="Level Pedas"/>
                 <t t-esc="spiceLevelLabel"/>
             </div>
-            <div t-if="props.mode !== 'receipt'" class="gy-line-controls d-flex align-items-center flex-shrink-0 ms-2">
+        </xpath>
+        <xpath expr="//div[hasclass('product-price')]" position="replace"/>
+        <!--
+            QTY GANDA: template bawaan sudah menampilkan qty sebagai
+            `<span class="qty">` di sebelah nama, sementara stepper kita
+            (xpath 3) juga menampilkan angkanya — terukur satu baris jadi
+            "1 | LEMON TEA" + input "1". Span bawaan disembunyikan HANYA saat
+            stepper dirender (mode != receipt), jadi struk tidak berubah.
+            `!important` WAJIB ada di nilai style-nya: span itu membawa utility
+            `.d-inline-block` milik Odoo yang menulis `display: inline-block
+            !important`, dan aturan !important di stylesheet MENANG atas style
+            inline biasa. (Odoo memakai pola yang sama, mis.
+            portal/static/src/chatter/core/portal_chatter.xml.)
+            Dipakai `t-att-style` (bukan position="replace") dengan sengaja:
+            isi span — termasuk `<t t-esc="vals.unitPart"/>` — tetap utuh,
+            sehingga tambalan pos_restaurant atas simpul itu (split qty di
+            SplitBillScreen) tidak ikut hilang.
+        -->
+        <xpath expr="//div[hasclass('product-name')]/span[hasclass('qty')]" position="attributes">
+            <attribute name="t-att-style">props.mode === 'receipt' ? '' : 'display: none !important;'</attribute>
+        </xpath>
+        <!--
+            SATU xpath untuk stepper+hapus DAN baris harga: keduanya disisipkan
+            sesudah `.line-details`, jadi urutannya ditentukan di sini (dua xpath
+            terpisah yang menargetkan simpul yang sama akan menumpuk dalam urutan
+            terbalik). Urutan di DOM: stepper dulu, baru harga.
+        -->
+        <xpath expr="//div[hasclass('line-details')]" position="after">
+            <div t-if="props.mode !== 'receipt'" class="gy-line-controls d-flex align-items-center">
                 <QuantityButtons
                     quantity="line.qty"
                     setQuantity="(qty) => this.gySetLineQuantity(line, qty)"
@@ -29,9 +76,6 @@
                     <i class="fa fa-trash" role="img" aria-label="Hapus"/>
                 </button>
             </div>
-        </xpath>
-        <xpath expr="//div[hasclass('product-price')]" position="replace"/>
-        <xpath expr="//div[hasclass('line-details')]" position="after">
             <div t-if="vals.price and props.mode !== 'receipt'" class="gy-line-price fw-bolder text-danger" t-out="vals.price"/>
         </xpath>
     </t>

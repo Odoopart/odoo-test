@@ -107,6 +107,13 @@ class GkDashboardData(models.AbstractModel):
         if clean_outlet_ids:
             res["outlet_contribution"] = self._outlet_contribution(
                 date_from, date_to, clean_outlet_ids, summary)
+        # Tab Pajak — PBJT (Pajak Daerah F&B) per outlet (modul geprekyukss_pbjt).
+        try:
+            res["pbjt"] = self._pbjt_summary(date_from, date_to, clean_outlet_ids)
+        except Exception as e:  # fail-soft: dashboard tetap jalan
+            import logging
+            logging.getLogger(__name__).warning("pbjt summary failed: %s", e, exc_info=True)
+            res["pbjt"] = None
         return res
 
     @api.model
@@ -168,12 +175,72 @@ class GkDashboardData(models.AbstractModel):
         }
 
     # ------------------------------------------------------------------
+    # TAB PAJAK — PBJT (Pajak Daerah F&B) per outlet
+    # ------------------------------------------------------------------
+    def _pbjt_summary(self, date_from, date_to, outlet_ids=None):
+        Config = self.env["pbjt.outlet.config"]
+        Recon = self.env["pbjt.reconciliation"]
+        domain = [("active", "=", True)]
+        if outlet_ids:
+            domain.append(("pos_config_id", "in", outlet_ids))
+        configs = Config.search(domain, order="pos_config_id")
+
+        def _tax(gross, cfg):
+            exempt = gross <= (cfg.exempt_omzet_month or 0.0)
+            if exempt or not gross:
+                return gross, 0.0, exempt
+            if cfg.price_include:
+                dpp = gross / (1.0 + (cfg.rate or 0.0) / 100.0)
+                return dpp, gross - dpp, exempt
+            return gross, gross * (cfg.rate or 0.0) / 100.0, exempt
+
+        per_outlet = []
+        totals = {"gross": 0.0, "dpp": 0.0, "real_tax": 0.0, "negotiated": 0.0, "gap": 0.0}
+        for cfg in configs:
+            rows = self.env["pos.order"]._read_group(
+                self._pos_domain(date_from, date_to, [cfg.pos_config_id.id]),
+                [], ["amount_total:sum"])
+            gross = rows[0][0] if rows else 0.0
+            dpp, tax, exempt = _tax(gross, cfg)
+            recons = Recon.search([
+                ("config_id", "=", cfg.id),
+                ("date_from", ">=", date_from),
+                ("date_to", "<=", date_to),
+            ])
+            negotiated = sum(recons.mapped("negotiated_amount"))
+            per_outlet.append({
+                "outlet_id": cfg.pos_config_id.id,
+                "outlet": cfg.pos_config_id.name,
+                "daerah": cfg.daerah,
+                "perda_ref": cfg.perda_ref,
+                "rate": cfg.rate,
+                "price_include": cfg.price_include,
+                "gross": gross,
+                "dpp": dpp,
+                "real_tax": tax,
+                "negotiated": negotiated,
+                "gap": tax - negotiated,
+                "is_exempt": exempt,
+            })
+            totals["gross"] += gross
+            totals["dpp"] += dpp
+            totals["real_tax"] += tax
+            totals["negotiated"] += negotiated
+            totals["gap"] += tax - negotiated
+        return {"per_outlet": per_outlet, "totals": totals, "config_count": len(configs)}
+
+    # ------------------------------------------------------------------
     # TAB 1 — RINGKASAN EKSEKUTIF
     # ------------------------------------------------------------------
     def _pos_domain(self, date_from, date_to, outlet_ids=None):
+        # F1 (audit GUI 26 Sep): `date_order` adalah DATETIME UTC. Batas string
+        # 'YYYY-MM-DD' apa adanya di-konversi Odoo dari timezone user yang login,
+        # sehingga rentang bergeser per pengguna (omzet POS berubah menurut tz).
+        # Pakai datetime penuh "YYYY-MM-DD 00:00:00" agar diperlakukan sebagai
+        # UTC apa adanya → identik dengan Pendapatan GL/MIS di semua tz.
         dom = [
-            ("date_order", ">=", date_from),
-            ("date_order", "<", self._next_day(date_to)),
+            ("date_order", ">=", date_from + " 00:00:00"),
+            ("date_order", "<", self._next_day(date_to) + " 00:00:00"),
             ("state", "in", self.POS_SALE_STATES),
         ]
         if outlet_ids:
@@ -182,7 +249,9 @@ class GkDashboardData(models.AbstractModel):
 
     def _pos_sales_summary(self, date_from, date_to, outlet_ids=None):
         dom = self._pos_domain(date_from, date_to, outlet_ids)
-        Order = self.env["pos.order"]
+        # F1: grouping `date_order:day` juga harus UTC agar Σ harian == total
+        # (domain sudah UTC; tanpa ini grouping mengikuti tz user → tak rekonsiliasi).
+        Order = self.env["pos.order"].with_context(tz="UTC")
 
         rows = Order._read_group(dom, [], ["amount_total:sum"])
         total = rows[0][0] or 0.0 if rows else 0.0
@@ -579,6 +648,29 @@ class GkDashboardData(models.AbstractModel):
             if "penyusutan" in acc.name.lower() and (debit or 0.0) > 0:
                 dep_by_name[acc.name] = dep_by_name.get(acc.name, 0.0) + debit
 
+        # Penyusutan per bulan diambil dari JADWAL REGISTER OCA — sumber yang sama dipakai
+        # kartu "Jadwal Penyusutan Mendatang" dan test F4. Sebelum P7 (19 Sep 2026) angka
+        # diambil dari total beban GL sepanjang periode laporan, sehingga kolom
+        # "Penyusutan/Bulan" tampil 3x lipat (Resto Rp 7.165.003,34 padahal
+        # Rp 3.027.466,20/bulan) dan "Masa Manfaat" ikut salah (5,8 thn padahal 13,8 thn).
+        # Aset yang belum/bukan di register memakai cadangan: beban GL / jumlah bulan periode.
+        _d1 = date.fromisoformat(str(date_from)[:10])
+        _d2 = date.fromisoformat(str(date_to)[:10])
+        n_bulan = max(1, (_d2.year - _d1.year) * 12 + (_d2.month - _d1.month) + 1)
+        jadwal_berikut = {}
+        try:
+            for ln in self.env["account.asset.line"].search([
+                    ("type", "=", "depreciate"), ("init_entry", "=", False),
+                    ("move_check", "=", False), ("line_date", ">", date_to)], order="line_date"):
+                akun_bruto = ln.asset_id.profile_id.account_asset_id or ln.asset_id["account_asset_id"]
+                if not akun_bruto:
+                    continue
+                bulan = ln.line_date.strftime("%Y-%m")
+                per_akun = jadwal_berikut.setdefault(akun_bruto.code, {})
+                per_akun[bulan] = per_akun.get(bulan, 0.0) + (ln.amount or 0.0)
+        except Exception:      # modul aset belum terpasang / register kosong
+            jadwal_berikut = {}
+
         asset_rows = []
         total_gross = total_accum = total_dep_month = 0.0
         for code, t in rows_by_code.items():
@@ -586,12 +678,19 @@ class GkDashboardData(models.AbstractModel):
             if gross <= 0:
                 continue
             accum = accum_by_name.get(t["name"].strip().lower(), 0.0)
-            dep_month = self._match_dep_month(t["name"], dep_by_name)
+            dep_period = self._match_dep_month(t["name"], dep_by_name)
+            bulan_reg = jadwal_berikut.get(code) or {}
+            if bulan_reg:
+                dep_month = bulan_reg[sorted(bulan_reg)[0]]      # bulan pertama yang dijadwalkan
+            else:
+                dep_month = dep_period / n_bulan
             life = round(gross / dep_month / 12.0, 1) if dep_month else None
             asset_rows.append({
                 "code": code, "name": t["name"], "gross": gross,
                 "accum": accum, "net": gross - accum,
-                "dep_month": dep_month, "life_years": life,
+                "dep_month": dep_month, "dep_period": dep_period,
+                "dep_source": "register" if bulan_reg else "gl",
+                "life_years": life,
             })
             total_gross += gross
             total_accum += accum
@@ -643,13 +742,17 @@ class GkDashboardData(models.AbstractModel):
             inv_total += val
 
         # --- Waste / susut: scrap selesai dalam periode
+        # A3 (audit): stock.scrap Odoo 19 TIDAK punya field scrap_value, jadi
+        # `getattr(s, "scrap_value", 0.0)` selalu 0 → panel waste kosong walau
+        # ada scrap. Nilai dihitung dari stock.valuation.layer (bila modul
+        # valuasi ada) atau fallback qty × standard_price.
         Scrap = self.env["stock.scrap"]
         scraps = []
         try:
             for s in Scrap.search([("date_done", ">=", date_from), ("date_done", "<=", self._next_day(date_to)),
                                    ("state", "=", "done")], limit=100):
                 scraps.append({"product": s.product_id.name, "qty": s.scrap_qty,
-                               "value": getattr(s, "scrap_value", 0.0) or 0.0})
+                               "value": self._scrap_value(s)})
         except Exception:
             pass
         waste_total = sum(s["value"] for s in scraps) if scraps else 0.0
@@ -668,6 +771,27 @@ class GkDashboardData(models.AbstractModel):
             "inventory": {"per_warehouse": wh_rows, "total": inv_total},
             "waste": {"count": len(scraps), "total_value": waste_total, "rows": scraps},
         }
+
+    def _scrap_value(self, scrap):
+        """Nilai susut satu scrap (A3).
+
+        Prioritas: Σ |stock.valuation.layer.value| dari pergerakan scrap
+        (nilai persediaan sesungguhnya, modul valuasi aktif). Fallback:
+        scrap_qty × product.standard_price. Selalu nilai absolut (scrap =
+        arus keluar persediaan yang value-nya negatif di SVL).
+        """
+        qty = abs(scrap.scrap_qty or 0.0)
+        try:
+            moves = scrap.move_ids
+            if moves and "stock.valuation.layer" in self.env:
+                svls = self.env["stock.valuation.layer"].search(
+                    [("stock_move_id", "in", moves.ids)])
+                total = sum(abs(v.value or 0.0) for v in svls)
+                if total:
+                    return total
+        except Exception:
+            pass
+        return qty * (getattr(scrap.product_id, "standard_price", 0.0) or 0.0)
 
     def _match_dep_month(self, asset_name, dep_by_name):
         # "Aset Renovasi" ↔ "Beban Penyusutan Renovasi"; fallback: kata kunci
@@ -931,6 +1055,24 @@ class GkDashboardData(models.AbstractModel):
         return total
 
     def _monthly_net_last_n(self, date_to_str, n=6):
+        """n bulan terakhir (bulan `date_to_str` = bulan terakhir).
+
+        Tiap bulan mengembalikan: month, label, income, expense, value(=laba
+        bersih), hpp, operational, commission, depreciation, gross_profit,
+        margin_pct.
+
+        Klasifikasi beban memakai SATU _read_group per bulan (group by akun)
+        lalu dibagi ke bucket EKSKLUSIF dengan presedensi sama seperti
+        _finance_detail, sehingga HPP + operational + commission +
+        depreciation == expense (tabel Laba Rugi bisa di-foot tanpa double
+        count):
+            account_type == 'expense_direct_cost' → hpp
+            nama ~ 'penyusutan'                   → depreciation
+            nama ~ 'komisi'                       → commission
+            sisanya                               → operational
+        Catatan: bucket eksklusif ini menutup celah double count yang ada di
+        MIS (row HPP & row Beban Penyusutan dihitung independen).
+        """
         import calendar
         d_to = date.fromisoformat(date_to_str)
         # kumpulkan bulan mundur n-1 .. 0
@@ -959,17 +1101,37 @@ class GkDashboardData(models.AbstractModel):
                     [("date", ">=", d_from), ("date", "<=", d_to_m), ("parent_state", "=", "posted"),
                      ("account_id", "in", inc_accs.ids)], [], ["debit:sum", "credit:sum"]):
                 inc += (credit or 0.0) - (debit or 0.0)
-            exp = 0.0
-            for debit, credit in Aml._read_group(
+            # Beban: group by akun → total + bucket kategori dalam satu query.
+            exp = hpp = dep = commission = 0.0
+            for acc, debit, credit in Aml._read_group(
                     [("date", ">=", d_from), ("date", "<=", d_to_m), ("parent_state", "=", "posted"),
-                     ("account_id", "in", exp_accs.ids)], [], ["debit:sum", "credit:sum"]):
-                exp += (debit or 0.0) - (credit or 0.0)
+                     ("account_id", "in", exp_accs.ids)], ["account_id"], ["debit:sum", "credit:sum"]):
+                amt = (debit or 0.0) - (credit or 0.0)
+                exp += amt
+                name_l = (acc.name or "").lower()
+                if acc.account_type == "expense_direct_cost":
+                    hpp += amt
+                elif "penyusutan" in name_l:
+                    dep += amt
+                elif "komisi" in name_l:
+                    commission += amt
             net = inc - exp
-            label = f"{calendar.month_abbr[mm]} {yy}" if n <= 12 else f"{mm:02d}/{yy}"
-            # Indonesia short
             id_months = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
-            label_id = f"{id_months[mm]} {yy}"
-            out.append({"month": f"{yy:04d}-{mm:02d}", "label": label_id, "value": net, "income": inc, "expense": exp})
+            out.append({
+                "month": f"{yy:04d}-{mm:02d}",
+                "label": f"{id_months[mm]} {yy}",
+                "value": net,
+                "income": inc,
+                "expense": exp,
+                # Rincian komponen biaya per bulan (F5) — dipakai kolom
+                # Tabel Laba Rugi Bulanan di dashboard.
+                "hpp": hpp,
+                "depreciation": dep,
+                "commission": commission,
+                "operational": exp - hpp - dep - commission,
+                "gross_profit": inc - hpp,
+                "margin_pct": (net / inc * 100) if inc else 0.0,
+            })
         return out
 
     # ------------------------------------------------------------------

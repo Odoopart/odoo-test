@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="geprekyukss_home.HomeClock">
+        <div class="o_gk_home_clock">
+            <div class="o_gk_home_clock_date" t-esc="dateLabel"/>
+            <div class="o_gk_home_clock_time" t-esc="timeLabel"/>
+        </div>
+    </t>
+
+    <t t-name="geprekyukss_home.HomeMenu">
+        <div class="o_gk_home">
+            <div class="o_gk_home_inner">
+                <div class="o_gk_home_card">
+                    <HomeClock/>
+                    <div class="o_gk_home_announce">
+                        <textarea
+                            class="o_gk_home_textarea"
+                            t-att-placeholder="placeholder"
+                            t-att-readonly="!state.canEdit"
+                            t-model="state.announcement"/>
+                        <button
+                            t-if="state.canEdit"
+                            class="btn o_gk_home_save"
+                            t-att-disabled="state.saving"
+                            t-on-click="saveAnnouncement"
+                            t-esc="saveLabel"/>
+                    </div>
+                </div>
+
+                <div class="o_gk_home_grid">
+                    <t t-foreach="apps" t-as="app" t-key="app.id">
+                        <div class="o_gk_home_tile_wrap">
+                            <button
+                                class="o_gk_home_tile"
+                                t-att-title="app.name"
+                                t-on-click="() => this.selectApp(app)">
+                                <img
+                                    t-att-src="app.webIconData || appIconFallback"
+                                    t-att-alt="app.name"/>
+                            </button>
+                            <div class="o_gk_home_label" t-esc="app.name"/>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

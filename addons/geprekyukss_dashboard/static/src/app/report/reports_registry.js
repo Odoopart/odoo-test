@@ -107,6 +107,20 @@ export function getReport(key) {
 }
 
 /**
+ * A1 (audit): laporan akuntansi (AFR/MIS) bersifat KONSOLIDASI — tidak ada
+ * dimensi outlet di account.move.line (kedua outlet berbagi journal yang
+ * sama, pos.order tidak ter-link ke account.move). Karena itu filter outlet
+ * tidak boleh ditampilkan sebagai aktif untuk laporan ini; shell menandainya
+ * "Konsolidasi". Tambahkan key di sini bila kelak sebuah laporan benar-benar
+ * mendukung filter outlet.
+ */
+export const OUTLET_FILTER_REPORTS = new Set();
+
+export function supportsOutlet(key) {
+    return OUTLET_FILTER_REPORTS.has(key);
+}
+
+/**
  * F-UI.2 v2 — pengelompokan semantik sidebar (gaya FinanceFlow: section
  * header uppercase kecil). Urutan grup & laporan dalam grup mengikuti
  * REPORT_ORDER. Dipakai dashboard.xml DAN report_shell.xml.

@@ -20,6 +20,10 @@ import { Component, useState } from "@odoo/owl";
  *    sub-detail pajak) — sorting/search tetap bekerja (baris ikut aliran).
  *  - footer totals dari meta.totals (Σ engine AFR, bukan sum client-side).
  *
+ * C1 (audit): mode SERVER-SIDE opsional (props.serverMode). Bila aktif,
+ * pencarian/sorting/paging dikerjakan server (payload hanya 1 halaman);
+ * bila tidak, perilaku lama (semua baris dimuat, filter di klien) tetap.
+ *
  * Format angka: formatRp() diimpor dari dashboard.js (satu sumber,
  * sudah dipakai 4 tab existing).
  */
@@ -33,6 +37,11 @@ export class ReportTable extends Component {
         columns: { type: Array, element: Object },
         rows: { type: Array, element: Object },
         meta: { type: Object, optional: true },
+        // C1: mode paginasi server-side (dikelola ReportShell).
+        serverMode: { type: Boolean, optional: true },
+        query: { type: Object, optional: true },
+        onPage: { type: Function, optional: true },
+        onQuery: { type: Function, optional: true },
     };
 
     setup() {
@@ -43,6 +52,33 @@ export class ReportTable extends Component {
             page: 0,
         });
         this.formatRp = formatRp;
+    }
+
+    // --------------------------------------------------------------
+    // C1 — abstraksi mode klien vs server.
+    // --------------------------------------------------------------
+    get serverMode() {
+        return !!this.props.serverMode;
+    }
+
+    get pageSize() {
+        return (this.props.meta && this.props.meta.limit) || PAGE_SIZE;
+    }
+
+    get currentPage() {
+        return this.serverMode ? (this.props.query && this.props.query.page) || 0 : this.state.page;
+    }
+
+    get currentSearch() {
+        return this.serverMode ? (this.props.query && this.props.query.search) || "" : this.state.search;
+    }
+
+    get currentSortKey() {
+        return this.serverMode ? (this.props.query && this.props.query.sortKey) || null : this.state.sortKey;
+    }
+
+    get currentSortDir() {
+        return this.serverMode ? (this.props.query && this.props.query.sortDir) || "asc" : this.state.sortDir;
     }
 
     // --------------------------------------------------------------
@@ -73,6 +109,8 @@ export class ReportTable extends Component {
     }
 
     get filteredRows() {
+        // C1: server sudah menyaring/mengurut/memotong.
+        if (this.serverMode) return this.props.rows;
         const q = this.state.search.trim().toLowerCase();
         let rows = this.props.rows;
         if (q) {
@@ -118,15 +156,29 @@ export class ReportTable extends Component {
     }
 
     get pageCount() {
+        if (this.serverMode) {
+            const total = (this.props.meta && this.props.meta.total_rows) || 0;
+            return Math.max(1, Math.ceil(total / this.pageSize));
+        }
         return Math.max(1, Math.ceil(this.filteredRows.length / PAGE_SIZE));
     }
 
     get pageRows() {
+        if (this.serverMode) return this.props.rows;
         const start = this.state.page * PAGE_SIZE;
         return this.filteredRows.slice(start, start + PAGE_SIZE);
     }
 
     get rangeLabel() {
+        if (this.serverMode) {
+            const meta = this.props.meta || {};
+            const total = meta.total_rows || 0;
+            if (!total) return "0 baris";
+            const offset = meta.offset || 0;
+            const start = offset + 1;
+            const end = Math.min(offset + this.pageSize, total);
+            return `${start}–${end} dari ${total} baris`;
+        }
         const total = this.filteredRows.length;
         if (!total) return "0 baris";
         const start = this.state.page * PAGE_SIZE + 1;
@@ -135,31 +187,59 @@ export class ReportTable extends Component {
     }
 
     onSearch(ev) {
-        this.state.search = ev.target.value;
+        const value = ev.target.value;
+        if (this.serverMode) {
+            this.props.onQuery && this.props.onQuery({ search: value });
+            return;
+        }
+        this.state.search = value;
         this.state.page = 0;
+    }
+
+    onHeaderKeydown(ev, key) {
+        if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            this.onSort(key);
+        }
     }
 
     onSort(key) {
         const col = this.props.columns.find((c) => c.key === key);
         if (!col || !col.sortable) return;
-        if (this.state.sortKey === key) {
-            this.state.sortDir = this.state.sortDir === "asc" ? "desc" : "asc";
+        let sortDir;
+        if (this.currentSortKey === key) {
+            sortDir = this.currentSortDir === "asc" ? "desc" : "asc";
         } else {
-            this.state.sortKey = key;
-            this.state.sortDir = "asc";
+            sortDir = "asc";
         }
+        if (this.serverMode) {
+            this.props.onQuery && this.props.onQuery({ sortKey: key, sortDir });
+            return;
+        }
+        this.state.sortKey = key;
+        this.state.sortDir = sortDir;
     }
 
     prevPage() {
-        if (this.state.page > 0) this.state.page -= 1;
+        if (this.currentPage <= 0) return;
+        if (this.serverMode) {
+            this.props.onPage && this.props.onPage(this.currentPage - 1);
+            return;
+        }
+        this.state.page -= 1;
     }
 
     nextPage() {
-        if (this.state.page < this.pageCount - 1) this.state.page += 1;
+        if (this.currentPage >= this.pageCount - 1) return;
+        if (this.serverMode) {
+            this.props.onPage && this.props.onPage(this.currentPage + 1);
+            return;
+        }
+        this.state.page += 1;
     }
 
     sortIcon(key) {
-        if (this.state.sortKey !== key) return "fa-sort";
-        return this.state.sortDir === "asc" ? "fa-sort-asc" : "fa-sort-desc";
+        if (this.currentSortKey !== key) return "fa-sort";
+        return this.currentSortDir === "asc" ? "fa-sort-asc" : "fa-sort-desc";
     }
 }

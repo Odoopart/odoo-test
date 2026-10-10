@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Client action = halaman awal kustom (lihat static/src/home/). -->
+        <record id="action_home" model="ir.actions.client">
+            <field name="name">Home Menu</field>
+            <field name="tag">geprekyukss_home.home</field>
+        </record>
+
+        <!-- Admin: record base.user_admin bersifat noupdate, jadi diset lewat
+             function agar tetap diterapkan saat upgrade. -->
+        <function model="res.users" name="write">
+            <value eval="[ref('base.user_admin')]"/>
+            <value eval="{'action_id': ref('action_home')}"/>
+        </function>
+
+        <!-- User internal lain yang belum punya Home Action. -->
+        <function model="res.users" name="write">
+            <function model="res.users" name="search">
+                <value eval="[('share', '=', False), ('action_id', '=', False)]"/>
+            </function>
+            <value eval="{'action_id': ref('action_home')}"/>
+        </function>
+    </data>
+</odoo>

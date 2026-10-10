@@ -5,25 +5,29 @@
         <div class="gk-rtable">
             <div class="gk-rtable-tools" t-if="props.rows.length">
                 <div class="gk-rtable-search">
-                    <i class="fa fa-search"/>
+                    <i class="fa fa-search" aria-hidden="true"/>
                     <input type="text" placeholder="Cari…" t-on-input="onSearch"
-                           t-att-value="state.search"/>
+                           t-att-value="currentSearch" aria-label="Cari di dalam tabel"/>
                 </div>
                 <span class="gk-rtable-count" t-esc="rangeLabel"/>
             </div>
 
             <div class="gk-rtable-scroll">
-                <table>
+                <table aria-label="Tabel laporan">
                     <thead>
                         <tr>
                             <t t-foreach="props.columns" t-as="col" t-key="col.key">
-                                <th t-att-class="'gk-col-' + (col.align || 'left') + (col.sortable ? ' gk-sortable' : '')"
-                                    t-on-click="() => this.onSort(col.key)">
+                                <th scope="col"
+                                    t-att-class="'gk-col-' + (col.align || 'left') + (col.sortable ? ' gk-sortable' : '')"
+                                    t-att-tabindex="col.sortable ? 0 : -1"
+                                    t-att-aria-sort="col.sortable ? (currentSortKey === col.key ? (currentSortDir === 'asc' ? 'ascending' : 'descending') : 'none') : 'none'"
+                                    t-on-click="() => this.onSort(col.key)"
+                                    t-on-keydown="(ev) => this.onHeaderKeydown(ev, col.key)">
                                     <!-- F7: chip sisi kolom D/K ala FinanceFlow -->
                                     <t t-if="col.key === 'debit'"><span class="gk-side-chip gk-side-d">D</span></t>
                                     <t t-elif="col.key === 'credit'"><span class="gk-side-chip gk-side-k">K</span></t>
                                     <span t-esc="col.label"/>
-                                    <i t-if="col.sortable" t-att-class="'fa ' + sortIcon(col.key) + ' gk-sort-icon'"/>
+                                    <i t-if="col.sortable" t-att-class="'fa ' + sortIcon(col.key) + ' gk-sort-icon'" aria-hidden="true"/>
                                 </th>
                             </t>
                         </tr>
@@ -74,10 +78,12 @@
 
             <div class="gk-rtable-pager" t-if="pageCount > 1">
                 <button class="gk-rtable-page-btn" t-on-click="prevPage"
-                        t-att-disabled="state.page === 0">‹</button>
-                <span>Halaman <t t-esc="state.page + 1"/> / <t t-esc="pageCount"/></span>
+                        aria-label="Halaman sebelumnya"
+                        t-att-disabled="currentPage === 0">‹</button>
+                <span>Halaman <t t-esc="currentPage + 1"/> / <t t-esc="pageCount"/></span>
                 <button class="gk-rtable-page-btn" t-on-click="nextPage"
-                        t-att-disabled="state.page >= pageCount - 1">›</button>
+                        aria-label="Halaman berikutnya"
+                        t-att-disabled="currentPage >= pageCount - 1">›</button>
             </div>
         </div>
     </t>

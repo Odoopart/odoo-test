@@ -1,21 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-inherit="pos_restaurant.ActionpadWidget" t-inherit-mode="extension">
+    <!--
+        PENTING (perbaikan 19 Sep 2026): induknya HARUS "point_of_sale.ActionpadWidget",
+        BUKAN "pos_restaurant.ActionpadWidget".
 
-        <!-- Sembunyikan tombol Course/Kursus di ActionpadWidget -->
+        Di Odoo 19, `pos_restaurant/.../actionpad_widget.xml` memakai
+        `t-inherit="point_of_sale.ActionpadWidget"` + `t-inherit-mode="extension"`.
+        Template dengan mode "extension" TIDAK didaftarkan sebagai nama template baru
+        (lihat `assetsbundle.generate_xml_bundle()`: hanya blok "templates" yang
+        memanggil `registerTemplate`). Akibatnya `pos_restaurant.ActionpadWidget`
+        tidak pernah ada sebagai nama, dan tambalan yang menargetkannya dilewati
+        diam-diam — bundle hanya mencetak
+        `console.error("Missing (extension) parent templates: ...")`
+        sehingga tombol Course tetap muncul, "Payment" tidak berubah jadi "BAYAR",
+        dan tombol New tidak ter-restyle.
+
+        Urutan tetap aman karena manifest memakai anchor
+        ("after", "pos_restaurant/.../actionpad_widget.xml", <berkas ini>):
+        blok "extensions" menerapkan tambalan sesuai urutan berkas, jadi tambalan
+        pos_restaurant (yang menambahkan .course-btn) jalan lebih dulu.
+
+        Kelas-kelas yang dipakai di sini (`course-btn`, `pay-order-button-restaurant`,
+        `actionpad`) sudah diverifikasi ada di sumber Odoo 19.
+    -->
+    <t t-inherit="point_of_sale.ActionpadWidget" t-inherit-mode="extension">
+
+        <!-- Sembunyikan tombol Course/Kursus (ditambahkan pos_restaurant di atas) -->
         <xpath expr='//button[@t-on-click="()=>this.pos.addCourse()"]' position="attributes">
             <attribute name="t-if">false</attribute>
         </xpath>
 
-        <!-- Ganti tombol Payment jadi BAYAR -->
+        <!--
+            TOMBOL BAYAR → "Lanjut ke Pembayaran" (Fase 4).
+
+            Yang berubah dari versi sebelumnya ("BAYAR"):
+              * labelnya panjang sesuai board, jadi dibuat 2 bagian: <span> label
+                + <i> panah. Panah ditulis sebagai elemen, bukan ::after, supaya
+                ikut terbaca di pengukuran DOM (harness mengukur innerText).
+              * `w-50` dibuang: dulu separuh lebar karena tombol New/Course ada di
+                sebelahnya; di panel 222px tombol bayar memakai lebar penuh.
+              * `{{ this.highlightPay ? 'highlight btn-primary' : 'btn-secondary' }}`
+                dibuang — gayanya sekarang selalu aksen penuh dari SCSS section 22,
+                dan kelas bawaan `btn-secondary` justru menimpanya. Konsekuensinya
+                tombol tidak lagi "menyala" saat pembayaran sedang divalidasi;
+                itu disengaja supaya warna tombol tidak berpindah-pindah.
+              * `!currentOrder.isEmpty() and this.pos.numpadMode != 'table'` tetap
+                seperti aslinya.
+        -->
         <xpath expr="//button[hasclass('pay-order-button-restaurant')]" position="replace">
             <button t-if="!currentOrder.isEmpty() and this.pos.numpadMode != 'table'"
                 t-on-click="() =&gt; pos.pay()"
-                class="button pay-order-button pay-order-button-restaurant btn btn-lg w-50"
-                t-attf-class="{{ this.highlightPay ? 'highlight btn-primary' : 'btn-secondary' }}"
+                class="button pay-order-button pay-order-button-restaurant btn btn-lg gy-pay-btn"
             >
-                BAYAR
+                <span>Lanjut ke Pembayaran</span>
+                <i class="fa fa-long-arrow-right gy-pay-btn__arrow" role="img" aria-label=""/>
             </button>
+        </xpath>
+
+        <!--
+            TOMBOL SIMPAN versi LAYAR KECIL. Odoo merender tombol simpan DUA kali
+            (di ControlButtons untuk layar besar, di sini untuk isSmallProductScreen)
+            dengan `t-if` yang saling meniadakan. Kalau hanya satu yang dilabeli,
+            labelnya hilang begitu lebar jendela melewati breakpoint.
+        -->
+        <xpath expr="//button[@t-on-click='() =&gt; this.pos.clickSaveOrder()']" position="attributes">
+            <attribute name="class" add="gy-save-order-btn" separator=" "/>
+            <attribute name="t-att-title">'Simpan order ke server'</attribute>
+        </xpath>
+        <xpath expr="//button[@t-on-click='() =&gt; this.pos.clickSaveOrder()']/i[hasclass('fa-upload')]" position="replace">
+            <i class="fa fa-upload" role="img" aria-label="Simpan Order"/>
+            <span class="gy-save-order-label">Simpan Order</span>
         </xpath>
 
         <!-- Restyle tombol New -->

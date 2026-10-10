@@ -2,9 +2,12 @@
 
 import { Component, useState, useRef, useExternalListener, onWillStart } from "@odoo/owl";
 import { useService } from "@web/core/utils/hooks";
-import { REPORTS, getGroupedReports } from "./reports_registry.js";
+import { REPORTS, getGroupedReports, supportsOutlet } from "./reports_registry.js";
 import { ReportTable } from "./report_table.js";
 import { ReportMatrix } from "./report_matrix.js";
+// Shell (topnav/sidebar) dipakai bersama dengan dashboard — brandmark diimpor
+// dari satu sumber agar kedua halaman tidak mungkin beda visual.
+import { BRANDMARK } from "../dashboard/dashboard.js";
 
 const MONTHS = [
     "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -14,6 +17,7 @@ const MONTHS = [
 // F-UI.5: label pendek utk rentang kustom ("15 Agu – 10 Sep 2026")
 const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
 const MAX_RANGE_DAYS = 366;   // guard: GL bisa puluhan ribu baris utk rentang panjang
+const PAGE_SIZE = 50;         // C1: baris per halaman (paginasi server-side)
 
 import { registry } from "@web/core/registry";
 
@@ -55,6 +59,7 @@ export class GkReportPage extends Component {
         this.reports = REPORTS;
         // F-UI.2b: struktur grouping untuk sidebar (satu sumber dgn dashboard)
         this.groupedReports = getGroupedReports();
+        this.brandmark = BRANDMARK;
 
         // Deep-link (F-UI.2c): initialReport valid dipakai sebagai laporan awal;
         // selain itu default PoC #1 (§D.2) = TB.
@@ -75,12 +80,21 @@ export class GkReportPage extends Component {
             outlets: [],
             data: null,                      // payload get_report_data
             exporting: false,
+            // Shell mock: sidebar off-canvas < 1024px (hamburger di topnav)
+            sidebarOpen: false,
+            // Dropdown filter outlet (ditutup saat klik di luar)
+            outletMenuOpen: false,
             // F-UI.5: mode filter — "month" (default, perilaku lama) | "custom"
             rangeMode: "month",
             customFrom: "",                  // "YYYY-MM-DD" dari <input type=date>
             customTo: "",
             rangeError: "",                  // validasi inline (from>to, >1 tahun)
             activePreset: "",                // this_month|last_month|ytd|30d|90d|""
+            // C1: state paginasi/pencarian/sorting server-side tabel AFR
+            page: 0,
+            search: "",
+            sortKey: null,
+            sortDir: "asc",
         });
 
         this.months = MONTHS;
@@ -92,7 +106,6 @@ export class GkReportPage extends Component {
                 this.state.outletMenuOpen = false;
             }
         });
-        this.state.outletMenuOpen = false;
 
         onWillStart(async () => {
             await this.loadOutlets();
@@ -108,6 +121,16 @@ export class GkReportPage extends Component {
     // ------------------------------------------------------------------
     get activeReportConfig() {
         return this.reports[this.state.activeReport];
+    }
+
+    /** A1: apakah laporan aktif punya dimensi outlet nyata (konsolidasi = false). */
+    get outletSupported() {
+        return supportsOutlet(this.state.activeReport);
+    }
+
+    /** C1: tabel AFR pakai paginasi/pencarian/sorting server-side. */
+    get isServerTable() {
+        return this.activeReportConfig && this.activeReportConfig.renderer === "table";
     }
 
     get monthLabel() {
@@ -189,14 +212,24 @@ export class GkReportPage extends Component {
         this.state.phase = "loading";
         this.state.data = null;
         try {
+            const params = {
+                date_from: this.period.date_from,
+                date_to: this.period.date_to,
+                // A1: laporan konsolidasi tidak menerima filter outlet.
+                outlet_ids: this.outletSupported ? this.state.outletIds : [],
+            };
+            // C1: tabel AFR dipaginasi/dicari/diurut di server.
+            if (this.isServerTable) {
+                params.limit = PAGE_SIZE;
+                params.offset = this.state.page * PAGE_SIZE;
+                params.search = this.state.search;
+                params.sort_key = this.state.sortKey || "";
+                params.sort_dir = this.state.sortDir;
+            }
             const data = await this.orm.call(
                 "geprekyukss.dashboard.report.actions",
                 "get_report_data",
-                [this.state.activeReport, {
-                    date_from: this.period.date_from,
-                    date_to: this.period.date_to,
-                    outlet_ids: this.state.outletIds,
-                }],
+                [this.state.activeReport, params],
             );
             if (!data) {
                 this.state.phase = "empty";
@@ -224,6 +257,17 @@ export class GkReportPage extends Component {
     }
 
     // ------------------------------------------------------------------
+    // Shell (topnav + sidebar) — sama dengan dashboard
+    // ------------------------------------------------------------------
+    toggleSidebar() {
+        this.state.sidebarOpen = !this.state.sidebarOpen;
+    }
+
+    closeSidebar() {
+        this.state.sidebarOpen = false;
+    }
+
+    // ------------------------------------------------------------------
     // Handlers
     // ------------------------------------------------------------------
     selectReport(key) {
@@ -231,6 +275,30 @@ export class GkReportPage extends Component {
         const cfg = this.reports[key];
         if (!cfg || cfg.disabled) return;
         this.state.activeReport = key;
+        this._resetPaging();
+        this.load();
+    }
+
+    /** C1: kembali ke halaman 1 & buang pencarian/sort saat konteks berubah. */
+    _resetPaging() {
+        this.state.page = 0;
+        this.state.search = "";
+        this.state.sortKey = null;
+        this.state.sortDir = "asc";
+    }
+
+    /** C1: handler paginasi dari <ReportTable> (mode server-side). */
+    onTablePage(page) {
+        this.state.page = Math.max(0, page);
+        this.load();
+    }
+
+    /** C1: handler pencarian/sorting dari <ReportTable> (mode server-side). */
+    onTableQuery({ search, sortKey, sortDir }) {
+        if (search !== undefined) this.state.search = search;
+        if (sortKey !== undefined) this.state.sortKey = sortKey;
+        if (sortDir !== undefined) this.state.sortDir = sortDir;
+        this.state.page = 0;
         this.load();
     }
 
@@ -240,6 +308,7 @@ export class GkReportPage extends Component {
         let m = this.state.month - 1, y = this.state.year;
         if (m < 1) { m = 12; y -= 1; }
         this.state.month = m; this.state.year = y;
+        this._resetPaging();
         this.load();
     }
 
@@ -248,6 +317,7 @@ export class GkReportPage extends Component {
         let m = this.state.month + 1, y = this.state.year;
         if (m > 12) { m = 1; y += 1; }
         this.state.month = m; this.state.year = y;
+        this._resetPaging();
         this.load();
     }
 
@@ -268,6 +338,7 @@ export class GkReportPage extends Component {
             this.state.rangeMode = "month";
             this.state.activePreset = "";
         }
+        this._resetPaging();
         this.load();
     }
 
@@ -294,6 +365,7 @@ export class GkReportPage extends Component {
         this.state.customTo = iso(t);
         this.state.activePreset = key;
         this.state.rangeError = "";
+        this._resetPaging();
         this.load();
     }
 
@@ -314,6 +386,7 @@ export class GkReportPage extends Component {
             return;
         }
         this.state.rangeError = "";
+        this._resetPaging();
         this.load();
     }
 
@@ -326,6 +399,7 @@ export class GkReportPage extends Component {
         this.state.outletIds = opt.id === "all" ? [] : [opt.id];
         this.state.outletName = opt.name;
         this.state.outletMenuOpen = false;
+        this._resetPaging();
         this.load();
     }
 
@@ -339,7 +413,8 @@ export class GkReportPage extends Component {
                 [this.state.activeReport, {
                     date_from: this.period.date_from,
                     date_to: this.period.date_to,
-                    outlet_ids: this.state.outletIds,
+                    // A1: laporan konsolidasi tidak menerima filter outlet.
+                    outlet_ids: this.outletSupported ? this.state.outletIds : [],
                 }, fmt],
             );
             await this.action.doAction(action);

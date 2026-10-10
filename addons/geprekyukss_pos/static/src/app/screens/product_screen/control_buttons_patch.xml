@@ -1,10 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <templates id="template" xml:space="preserve">
 
+    <!--
+        Tombol kontrol panel order (Odoo 19, `point_of_sale.ControlButtons`).
+
+        Di layar besar (>=992px) baris ini berisi: Pelanggan (SelectPartnerButton),
+        Catatan (InternalNoteButton), preset, SIMPAN ORDER, dan menu ⋮.
+        Di layar kecil (isSmallProductScreen) tombol yang sama dirender ULANG oleh
+        ActionpadWidget — itu sebabnya tombol simpan muncul dua kali di DOM dengan
+        `t-if` yang saling meniadakan. Berkas ini hanya menangani yang di layar
+        besar; versi layar kecil ada di actionpad_widget_patch.xml supaya tidak
+        ada varian yang tertinggal tanpa label saat pindah breakpoint.
+
+        Yang diubah (dulu hanya ikon `fa-upload` tanpa teks sama sekali):
+          * diberi label "Simpan Order" (pos2: tombol putih berbingkai),
+          * diberi kelas `gy-save-order-btn` supaya gayanya diatur di SCSS,
+          * ikon + teks disusun sejajar.
+
+        Kenapa TIDAK dipindah ke container lain: pos2 menggambar dua tombol
+        bertumpuk (Simpan Order di atas, Lanjut ke Pembayaran di bawah), tapi
+        memindahkan elemen antar container lewat xpath jauh lebih rapuh daripada
+        manfaatnya. Susunan bertumpuk dicapai lewat gaya: baris kontrol dibuat
+        `flex-wrap` dan tombol ini dibuat selebar panel sehingga menempati barisnya
+        sendiri, tepat di atas tombol bayar. Lihat section 22 pos_theme.scss.
+
+        CATATAN TEKNIS: tombol simpan memakai `t-attf-class`, BUKAN `class`.
+        Menambah atribut `class` di samping `t-attf-class` tidak dijamin
+        tergabung, jadi ekspresi `t-attf-class`-nya diganti APA ADANYA dari
+        control_buttons.xml dengan satu kelas milik kita ditambahkan.
+    -->
     <t t-inherit="point_of_sale.ControlButtons" t-inherit-mode="extension">
+
+        <!-- Tombol Course/Kursus dari pos_restaurant tidak dipakai di alur ini. -->
         <xpath expr="//button[hasclass('course-btn')]" position="attributes">
             <attribute name="t-if">false</attribute>
         </xpath>
-    </t>
 
+        <!-- Tombol simpan: isi, kelas, dan judul. -->
+        <xpath expr="//button[@t-on-click='() =&gt; this.pos.clickSaveOrder()']" position="attributes">
+            <attribute name="t-attf-class">{{ buttonClass }} gy-save-order-btn ms-auto</attribute>
+            <attribute name="t-att-title">'Simpan order ke server'</attribute>
+        </xpath>
+        <xpath expr="//button[@t-on-click='() =&gt; this.pos.clickSaveOrder()']/i[hasclass('fa-upload')]" position="replace">
+            <i class="fa fa-upload" role="img" aria-label="Simpan Order"/>
+            <span class="gy-save-order-label">Simpan Order</span>
+        </xpath>
+
+    </t>
 </templates>

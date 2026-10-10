@@ -153,23 +153,32 @@
     </record>
 
     <!-- Kedua kolom ber-window TAHUN FISKAL (1 Jan → akhir bulan) — lihat
-         header. Wrapper men-set manual_date_from/to dari filter shell. -->
+         header. Mode relative; wrapper A2 menyesuaikan window pada CLONE
+         sementara, bukan record ini. -->
     <record id="mis_period_bs_month" model="mis.report.instance.period">
         <field name="name">Per Akhir Bulan</field>
         <field name="report_instance_id" ref="mis_instance_bs"/>
         <field name="source">actuals</field>
-        <field name="mode">fix</field>
-        <field name="manual_date_from">2026-01-01</field>
-        <field name="manual_date_to">2026-08-31</field>
+        <field name="mode">relative</field>
+        <field name="type">m</field>
+        <field name="offset">0</field>
+        <field name="duration">1</field>
+        <field name="is_ytd" eval="True"/>
+        <field name="manual_date_from" eval="False"/>
+        <field name="manual_date_to" eval="False"/>
         <field name="sequence">10</field>
     </record>
     <record id="mis_period_bs_prev" model="mis.report.instance.period">
         <field name="name">Per Akhir Bulan Lalu</field>
         <field name="report_instance_id" ref="mis_instance_bs"/>
         <field name="source">actuals</field>
-        <field name="mode">fix</field>
-        <field name="manual_date_from">2026-01-01</field>
-        <field name="manual_date_to">2026-07-31</field>
+        <field name="mode">relative</field>
+        <field name="type">m</field>
+        <field name="offset">-1</field>
+        <field name="duration">1</field>
+        <field name="is_ytd" eval="True"/>
+        <field name="manual_date_from" eval="False"/>
+        <field name="manual_date_to" eval="False"/>
         <field name="sequence">20</field>
     </record>
 

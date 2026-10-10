@@ -1,0 +1,24 @@
+# Addon di-mount saat runtime, tidak perlu masuk build context.
+addons
+
+# Repo & data besar yang tidak diperlukan image.
+.git
+.github
+.devcontainer
+.opencode
+repo
+backups
+scripts
+__pycache__
+
+# Berkas besar / tidak relevan.
+*.log
+*.zip
+*.png
+*.xlsx
+*.pdf
+*.sql
+*.dump
+*.md
+.env
+.pos-verify

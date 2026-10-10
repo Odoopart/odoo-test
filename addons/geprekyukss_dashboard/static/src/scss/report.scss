@@ -1,9 +1,41 @@
 // =====================================================================
-// Report Shell (F1) — halaman Laporan AFR/MIS di dalam dashboard custom.
-// Token visual SAMA dengan dashboard.scss (spec §2 PowerBI redesign):
-// hanya menambah style spesifik tabel/matrix/state; tidak ada warna baru.
+// Report Shell — halaman Laporan (AFR + MIS Builder)
+// Token visual = dashboard.scss (design system mock High-Fidelity):
+// file ini HANYA menambah style spesifik laporan (state navigasi, kartu
+// body laporan, tabel AFR, matrix MIS). Tidak ada warna baru.
+//
+// Catatan Fase 2: style kontrol filter (month picker, range picker, outlet,
+// tombol) SUDAH PINDAH ke dashboard.scss karena sekarang dipakai bersama
+// topnav dashboard dan header laporan. Jangan diduplikasi di sini.
 // =====================================================================
 
+$navy-900: #091628;
+$navy-700: #1a2f5a;
+$navy-100: #dce8f5;
+$navy-50: #eef4fb;
+$teal-700: #0e7c76;
+$teal-600: #0d9488;
+$teal-50: #f0fdfa;
+$emerald-700: #047857;
+$emerald-600: #059669;
+$red-600: #dc2626;
+$red-50: #fef2f2;
+$slate-900: #0f172a;
+$slate-700: #334155;
+$slate-600: #475569;
+$slate-500: #64748b;
+$slate-400: #94a3b8;
+$slate-300: #cbd5e1;
+$slate-200: #e2e8f0;
+$slate-100: #f1f5f9;
+$slate-50: #f8fafc;
+
+$font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+$radius-card: 16px;
+
+// ---------------------------------------------------------------
+// Navigasi sidebar laporan
+// ---------------------------------------------------------------
 .gk-reports {
     .gk-nav-item.disabled {
         opacity: 0.45;
@@ -20,151 +52,36 @@
 
     .gk-nav-back {
         margin-top: 12px;
-        border-top: 1px solid #E4E7EC;
+        border-top: 1px solid $slate-200;
         padding-top: 12px;
     }
 
     .gk-nav-engine {
         margin-top: 4px;
-
-        .gk-engine-tag {
-            font-size: 10px;
-            letter-spacing: 0.4px;
-            text-transform: uppercase;
-            color: #6B7280;
-        }
+        padding: 12px;
     }
 
-    // ---------------------------------------------------------------
-    // State: error (empty & loading sudah ada di dashboard.scss)
-    // ---------------------------------------------------------------
+    // -----------------------------------------------------------
+    // State: error (loading & empty ada di dashboard.scss)
+    // -----------------------------------------------------------
     .gk-error {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 60px 20px;
-        text-align: center;
-        color: #D64545;
+        border-color: rgba(220, 38, 38, 0.22);
 
-        p { max-width: 480px; margin: 0; color: #1A1D29; }
+        i { color: $red-600; }
+        p { color: $slate-900; }
 
-        .gk-btn-export { color: #1A1D29; }
+        .gk-btn-export { color: #fff; }
     }
 
-    // ---------------------------------------------------------------
-    // Report body — kartu berisi tabel/matrix
-    // ---------------------------------------------------------------
+    // -----------------------------------------------------------
+    // Report body — kartu pembungkus tabel/matrix
+    // -----------------------------------------------------------
     .gk-report-body {
-        background: #FFFFFF;
-        border: 1px solid #E4E7EC;
-        border-radius: 8px;
+        background: #fff;
+        border: 1px solid $slate-200;
+        border-radius: $radius-card;
         box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.08);
         padding: 16px;
-        margin: 0 32px 32px;
-    }
-
-    .gk-btn-ghost {
-        background: #FFFFFF;
-        border: 1px solid #E4E7EC;
-        color: #1A1D29;
-
-        &:hover { background: #F2F4F6; }
-    }
-
-    // -------------------------------------------------------------
-    // F-UI.5 — Date range picker (custom + preset)
-    // Token visual sama dgn month picker/outlet filter; tanpa warna baru.
-    // -------------------------------------------------------------
-    .gk-range-toggle {
-        align-self: center;
-    }
-
-    .gk-range-picker {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-
-    .gk-range-input {
-        border: 1px solid #E4E7EC;
-        border-radius: 6px;
-        padding: 7px 10px;
-        font-size: 13px;
-        font-family: inherit;
-        color: #1A1D29;
-        background: #FFFFFF;
-
-        &:focus {
-            outline: none;
-            border-color: #0F7C6C;
-            box-shadow: 0 0 0 3px rgba(15, 124, 108, 0.12);
-        }
-    }
-
-    .gk-range-sep {
-        color: #6B7280;
-        font-weight: 600;
-    }
-
-    .gk-range-presets {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        flex-wrap: wrap;
-
-        &.has-error .gk-range-input { border-color: #D64545; }
-    }
-
-    .gk-range-chip {
-        border: 1px solid #E4E7EC;
-        background: #FFFFFF;
-        border-radius: 999px;
-        padding: 5px 12px;
-        font-size: 12px;
-        font-weight: 500;
-        color: #1A1D29;
-        cursor: pointer;
-        transition: background 0.12s ease, border-color 0.12s ease;
-
-        &:hover { background: #F2F4F6; }
-
-        &.active {
-            background: rgba(15, 124, 108, 0.08);   // $brand-tint
-            border-color: #0F7C6C;
-            color: #0F7C6C;
-            font-weight: 600;
-        }
-    }
-
-    .gk-range-back {
-        margin-left: 4px;
-        color: #6B7280;
-    }
-
-    .gk-range-error {
-        margin: 0 32px 12px;
-        padding: 10px 14px;
-        border: 1px solid rgba(214, 69, 69, 0.25);
-        background: rgba(214, 69, 69, 0.06);
-        color: #D64545;
-        border-radius: 8px;
-        font-size: 13px;
-
-        i { margin-right: 6px; }
-    }
-
-    .gk-range-hint {
-        margin: 0 32px 12px;
-        padding: 8px 14px;
-        border: 1px solid #E4E7EC;
-        background: #F5F6F8;
-        color: #6B7280;
-        border-radius: 8px;
-        font-size: 12.5px;
-
-        i { margin-right: 6px; }
     }
 }
 
@@ -189,30 +106,33 @@
         display: flex;
         align-items: center;
         gap: 8px;
-        border: 1px solid #E4E7EC;
-        border-radius: 6px;
+        border: 1px solid $slate-200;
+        border-radius: 10px;
         padding: 6px 10px;
-        background: #F8FAFB;
+        background: $slate-50;
         min-width: 220px;
 
-        i { color: #6B7280; }
+        i { color: $slate-400; }
 
         input {
             border: none;
             outline: none;
             background: transparent;
             font: inherit;
-            color: #1A1D29;
+            font-family: $font-mono;
+            font-size: 12px;
+            color: $slate-900;
             width: 180px;
         }
     }
 
     .gk-rtable-count {
-        font-size: 12px;
-        color: #6B7280;
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-400;
     }
 
-    // F7: chip sisi kecil di header kolom debit/kredit (D merah, K hijau)
+    // Chip sisi kolom debit/kredit (D merah, K hijau)
     .gk-side-chip {
         display: inline-flex;
         align-items: center;
@@ -226,13 +146,13 @@
         vertical-align: 1px;
     }
 
-    .gk-side-d { background: rgba(214, 69, 69, 0.12); color: #D64545; }
-    .gk-side-k { background: rgba(30, 142, 90, 0.12); color: #1E8E5A; }
+    .gk-side-d { background: rgba(220, 38, 38, 0.12); color: $red-600; }
+    .gk-side-k { background: rgba(5, 150, 105, 0.12); color: $emerald-600; }
 
     .gk-rtable-scroll {
         overflow: auto;
-        max-height: calc(100vh - 300px);
-        border-top: 1px solid #E4E7EC;
+        max-height: calc(100vh - 320px);
+        border-top: 1px solid $slate-200;
 
         table {
             width: 100%;
@@ -243,72 +163,81 @@
         th {
             position: sticky;
             top: 0;
-            background: #F8FAFB;
-            color: #6B7280;
-            font-weight: 600;
-            font-size: 11px;
-            letter-spacing: 0.3px;
+            background: $slate-50;
+            color: $slate-400;
+            font-family: $font-mono;
+            font-weight: 700;
+            font-size: 10px;
+            letter-spacing: 0.06em;
             text-transform: uppercase;
             text-align: left;
-            padding: 10px 12px;
-            border-bottom: 1px solid #E4E7EC;
+            padding: 12px;
+            border-bottom: 2px solid $slate-200;
             white-space: nowrap;
             z-index: 1;
 
+            &.gk-col-left,
+            &.gk-col-center { text-align: left; }
             &.gk-col-right { text-align: right; }
             &.gk-col-center { text-align: center; }
 
             &.gk-sortable { cursor: pointer; user-select: none; }
-            &.gk-sortable:hover { color: #0F7C6C; }
+            &.gk-sortable:hover { color: $teal-600; }
+
+            .gk-sort-icon { margin-left: 5px; opacity: 0.55; }
         }
 
         td {
-            padding: 8px 12px;
-            border-bottom: 1px solid #EEF1F4;
-            color: #1A1D29;
+            padding: 10px 12px;
+            border-bottom: 1px solid $slate-100;
+            color: $slate-700;
 
-            &.gk-col-right { text-align: right; font-variant-numeric: tabular-nums; }
+            &.gk-col-left { text-align: left; }
+            &.gk-col-right { text-align: right; font-family: $font-mono; font-variant-numeric: tabular-nums; }
             &.gk-col-center { text-align: center; }
 
-            // F7 (gaya FinanceFlow): arah nilai — debit merah, kredit hijau,
-            // minus selalu merah, nol diredupkan ("–").
-            &.is-debit { color: #D64545; }
-            &.is-credit { color: #1E8E5A; }
-            &.is-neg { color: #D64545; font-weight: 600; }
-            &.is-zero { color: #B8BEC7; }
+            // Arah nilai: debit merah, kredit hijau, minus selalu merah,
+            // nol diredupkan ("–").
+            &.is-debit { color: $red-600; }
+            &.is-credit { color: $emerald-700; }
+            &.is-neg { color: $red-600; font-weight: 600; }
+            &.is-zero { color: $slate-300; }
         }
 
-        // F7: zebra rows halus (finance-app look) — genap sedikit gelap.
+        // Zebra halus + hover (sama dengan .gk-finance-table di dashboard)
         tbody tr:nth-child(even):not(.gk-rtable-row-muted):not(.gk-rtable-row-total) td {
-            background: #FAFBFC;
+            background: $slate-50;
         }
 
-        tbody tr:hover td { background: #F2F4F6; }
+        tbody tr:hover td { background: $navy-50; }
 
-        // F3: baris khusus GL (Saldo Awal/Akhir) & sub-detail pajak VAT
+        // Baris khusus GL (Saldo Awal/Akhir) & sub-detail pajak VAT
         tr.gk-rtable-row-muted td {
-            color: #6B7280;
+            color: $slate-500;
             font-style: italic;
-            background: #FAFBFC;
+            background: $slate-50;
         }
-        tr.gk-rtable-row-total td {
-            font-weight: 600;
-            background: #F8FAF9;
-            border-top: 1px solid #E4E7EC;
+        tr.gk-rtable-row-total td,
+        tr.gk-rtable-totrow td {
+            font-weight: 700;
+            color: $navy-900;
+            background: $navy-50;
+            border-top: 1px solid $slate-200;
         }
 
-        // F3: footer totals (dari engine AFR, bukan sum client-side)
+        // Footer totals (dari engine AFR, bukan sum client-side)
         tfoot td {
-            padding: 10px 12px;
-            border-top: 2px solid #0F7C6C;
-            background: #F0F7F6;
+            padding: 12px;
+            border-top: 2px solid $teal-600;
+            background: $teal-50;
+            font-family: $font-mono;
             font-variant-numeric: tabular-nums;
-            color: #1A1D29;
+            color: $navy-900;
         }
 
         .gk-rtable-nodata {
             text-align: center;
-            color: #6B7280;
+            color: $slate-400;
             padding: 40px 12px;
         }
     }
@@ -318,19 +247,20 @@
         align-items: center;
         justify-content: flex-end;
         gap: 12px;
-        font-size: 12px;
-        color: #6B7280;
+        font-family: $font-mono;
+        font-size: 11px;
+        color: $slate-500;
 
         .gk-rtable-page-btn {
-            border: 1px solid #E4E7EC;
-            background: #FFFFFF;
-            border-radius: 6px;
+            border: 1px solid $slate-200;
+            background: #fff;
+            border-radius: 10px;
             width: 28px;
             height: 28px;
             cursor: pointer;
-            color: #1A1D29;
+            color: $slate-700;
 
-            &:hover:not(:disabled) { background: #F2F4F6; }
+            &:hover:not(:disabled) { background: $slate-100; }
             &:disabled { opacity: 0.4; cursor: default; }
         }
     }
@@ -344,7 +274,7 @@
 
     .gk-rmatrix-scroll {
         overflow: auto;
-        max-height: calc(100vh - 300px);
+        max-height: calc(100vh - 320px);
     }
 
     table {
@@ -354,16 +284,18 @@
     }
 
     th {
-        background: #F8FAFB;
-        color: #6B7280;
-        font-weight: 600;
-        font-size: 11px;
-        letter-spacing: 0.3px;
+        background: $slate-50;
+        color: $slate-400;
+        font-family: $font-mono;
+        font-weight: 700;
+        font-size: 10px;
+        letter-spacing: 0.06em;
         text-transform: uppercase;
-        padding: 10px 12px;
-        border-bottom: 1px solid #E4E7EC;
+        padding: 12px;
+        border-bottom: 2px solid $slate-200;
         white-space: nowrap;
 
+        &.gk-col-left { text-align: left; }
         &.gk-col-center { text-align: center; }
         &.gk-col-right { text-align: right; }
     }
@@ -376,12 +308,13 @@
     }
 
     td {
-        padding: 8px 12px;
-        border-bottom: 1px solid #EEF1F4;
-        color: #1A1D29;
+        padding: 10px 12px;
+        border-bottom: 1px solid $slate-100;
+        color: $slate-700;
 
         &.gk-col-right {
             text-align: right;
+            font-family: $font-mono;
             font-variant-numeric: tabular-nums;
             white-space: nowrap;
         }
@@ -389,23 +322,26 @@
 
     .gk-rmatrix-label {
         font-weight: 600;
-        color: #1A1D29;
+        color: $navy-900;
     }
 
     .gk-rmatrix-desc {
         font-weight: 400;
-        font-size: 11px;
-        color: #6B7280;
+        font-family: $font-mono;
+        font-size: 10px;
+        color: $slate-400;
         margin-top: 2px;
     }
 
-    td.gk-neg { color: #D64545; }
+    td.gk-neg { color: $red-600; }
 
-    tbody tr:hover td { background: #F2F4F6; }
+    tbody tr:nth-child(even) td { background: $slate-50; }
+
+    tbody tr:hover td { background: $navy-50; }
 
     .gk-rtable-nodata {
         text-align: center;
-        color: #6B7280;
+        color: $slate-400;
         padding: 40px 12px;
     }
 }

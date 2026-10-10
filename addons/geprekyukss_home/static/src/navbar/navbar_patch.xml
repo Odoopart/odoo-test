@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <!-- Community: ganti dropdown app-menu dengan tombol yang membuka Home Menu. -->
+    <t t-name="geprekyukss_home.NavBarAppsMenu"
+       t-inherit="web.NavBar.AppsMenu"
+       t-inherit-mode="extension">
+        <xpath expr="//div[@class='o_navbar_apps_menu']/Dropdown" position="replace">
+            <button
+                class="o_gk_home_toggle"
+                data-hotkey="h"
+                t-att-title="homeMenuLabel"
+                t-on-click="() => this.openHomeMenu()">
+                <i class="oi oi-apps"/>
+                <span class="o_gk_home_toggle_label ms-1" t-esc="homeMenuLabel"/>
+            </button>
+        </xpath>
+    </t>
+</templates>

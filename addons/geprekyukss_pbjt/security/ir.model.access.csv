@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pbjt_config_user,pbjt.outlet.config user,model_pbjt_outlet_config,base.group_user,1,0,0,0
+access_pbjt_config_manager,pbjt.outlet.config manager,model_pbjt_outlet_config,account.group_account_manager,1,1,1,1
+access_pbjt_recon_user,pbjt.reconciliation user,model_pbjt_reconciliation,base.group_user,1,0,0,0
+access_pbjt_recon_manager,pbjt.reconciliation manager,model_pbjt_reconciliation,account.group_account_manager,1,1,1,1

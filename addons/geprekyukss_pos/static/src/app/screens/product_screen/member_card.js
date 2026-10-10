@@ -12,12 +12,14 @@ export class MemberCard extends Component {
     }
 
     get partner() {
-        return this.pos.get_order()?.get_partner();
+        return this.pos.getOrder()?.getPartner();
     }
 
     get initials() {
         const p = this.partner;
-        if (!p || !p.name) return "?";
+        if (!p || !p.name) {
+            return "?";
+        }
         return p.name
             .split(" ")
             .filter(Boolean)
@@ -26,7 +28,17 @@ export class MemberCard extends Component {
             .join("");
     }
 
-    selectCustomer() {
-        this.pos.showScreen("PartnerListScreen", { list: this.pos.models["res.partner"].getAll() });
+    /**
+     * Ganti/pilih member.
+     *
+     * Sebelumnya: `this.pos.showScreen("PartnerListScreen", {...})` — dua-duanya
+     * tidak ada di Odoo 19 (`PosStore` hanya punya `navigate()`, dan tidak ada
+     * halaman bernama `PartnerListScreen`), jadi klik kartu member melempar
+     * TypeError. API resmi Odoo 19 untuk memilih pelanggan adalah
+     * `pos.selectPartner()` → membuka popup `PartnerList` bawaan dan langsung
+     * memasang mitra terpilih ke order aktif.
+     */
+    async selectCustomer() {
+        await this.pos.selectPartner();
     }
 }

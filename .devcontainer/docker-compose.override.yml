@@ -1,4 +1,13 @@
-services:
-  odoo:
-    volumes:
-      - ..:/workspaces/Odoo-mv:cached
+# Override khusus devcontainer.
+#
+# DULU berisi bind mount "..:/workspaces/Odoo-mv:cached". Di codespace itu
+# merugikan: codespace sudah me-mount repo di /workspaces/<nama-repo> secara
+# otomatis, sementara path relatif ".." tadi ter-resolve ke folder induk repo,
+# sehingga muncul MOUNT DUPLIKAT (mis. /workspaces -> /workspaces/Odoo-mv).
+# Akibatnya: dua tampilan berbeda untuk berkas yang sama, git bisa terdeteksi
+# "dubious ownership", file-watcher ganda, dan skrip restore/agen AI menulis
+# ke path yang salah. Mount manual tidak diperlukan lagi.
+#
+# Berkas ini tetap ada (dirujuk devcontainer.json) supaya penambahan override
+# lain di masa depan tidak mengubah daftar dockerComposeFile.
+services: {}

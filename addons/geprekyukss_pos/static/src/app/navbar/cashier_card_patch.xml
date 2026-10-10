@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!--
+        KARTU KASIR — tambah NAMA + STATUS ke `point_of_sale.CashierName`.
+
+        Di Odoo 19 template aslinya hanya berisi avatar:
+            <button class="cashier-name btn …"><img class="avatar …"/></button>
+        jadi tanpa tambalan ini yang terlihat cuma foto bulat tanpa keterangan
+        siapa dan apakah POS sedang online (pos2: avatar + nama + "Online").
+
+        Isi yang ditambahkan: nama kasir dari `pos.cashier.name` (data NYATA,
+        bukan "Kasir 1" contoh di board) dan status dari
+        `pos.data.network.offline` — flag yang sama yang dipakai indikator
+        offline di navbar Odoo, jadi tidak ada sumber kebenaran kedua.
+
+        YANG SENGAJA TIDAK DIBUAT: chevron (tanda panah bawah) seperti di board.
+        Di board kartu itu tombol yang membuka menu; di instance ini tombolnya
+        memang TIDAK bisa diklik — `point_of_sale.CashierName` memberi dirinya
+        kelas `not-clickable pe-none`, dan `pos_hr` baru menambal kliknya
+        (`onCashierClick`) kalau `module_pos_hr` menyala sedangkan di sini
+        nilainya FALSE (diverifikasi lewat pos.config). Menambahkan chevron
+        berarti memasang tanda "ada menu di sini" pada elemen yang tidak
+        melakukan apa pun. Kalau nanti `module_pos_hr` dihidupkan, chevron-nya
+        baru pantas dipasang — letaknya di sini, setelah <img>.
+
+        Tambalan ini juga tidak beririsan dengan `pos_hr.CashierName` (yang
+        menambal atribut t-on-click pada //button), jadi tidak butuh anchor
+        ("after", …) di manifest.
+    -->
+    <t t-inherit="point_of_sale.CashierName" t-inherit-mode="extension">
+        <xpath expr="//img[hasclass('avatar')]" position="after">
+            <span class="gy-cashier__meta">
+                <b class="gy-cashier__name" t-esc="pos.cashier?.name or 'Kasir'"/>
+                <!--
+                    t-translation="off" DISENGAJA, bukan kelalaian: Odoo menerjemahkan
+                    teks statis di templat QWeb, dan di lokal Indonesia "Online"
+                    menjadi "Daring" (dari mail/event/hr_attendance). Dua alasan:
+                    (1) board pos2 menulis "Online",
+                    (2) label Offline milik Odoo sendiri (web/i18n/id.po) TIDAK
+                        diterjemahkan, jadi hasil terjemahan akan asimetris:
+                        "Daring" di sebelah "Offline".
+                    Kalau nanti ingin ikut lokal, cukup hapus atribut ini — teksnya
+                    langsung jadi "Daring/Offline" tanpa perubahan lain.
+                -->
+                <i class="gy-cashier__status"
+                   t-att-class="{ 'gy-cashier__status--offline': pos.data.network.offline }">
+                    <t t-if="pos.data.network.offline" t-translation="off">Offline</t>
+                    <t t-else="" t-translation="off">Online</t>
+                </i>
+            </span>
+        </xpath>
+    </t>
+</templates>

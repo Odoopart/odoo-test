@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ================= KONFIGURASI PBJT ================= -->
+        <record id="view_pbjt_config_tree" model="ir.ui.view">
+            <field name="name">pbjt.outlet.config.tree</field>
+            <field name="model">pbjt.outlet.config</field>
+            <field name="arch" type="xml">
+                <list string="Konfigurasi PBJT">
+                    <field name="pos_config_id"/>
+                    <field name="daerah"/>
+                    <field name="rate"/>
+                    <field name="price_include"/>
+                    <field name="exempt_omzet_month"/>
+                    <field name="tax_id"/>
+                    <field name="active"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_pbjt_config_form" model="ir.ui.view">
+            <field name="name">pbjt.outlet.config.form</field>
+            <field name="model">pbjt.outlet.config</field>
+            <field name="arch" type="xml">
+                <form string="Konfigurasi PBJT">
+                    <sheet>
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_apply_tax_to_pos_products" type="object"
+                                    string="Terapkan ke Produk POS" class="oe_stat_button"
+                                    icon="fa-tags"/>
+                        </div>
+                        <group>
+                            <group string="Outlet">
+                                <field name="pos_config_id"/>
+                                <field name="company_id"/>
+                                <field name="active"/>
+                            </group>
+                            <group string="Kebijakan Pajak">
+                                <field name="daerah"/>
+                                <field name="perda_ref"/>
+                                <field name="rate"/>
+                                <field name="price_include"/>
+                                <field name="exempt_omzet_month" widget="monetary"/>
+                            </group>
+                        </group>
+                        <group string="Akun &amp; Pajak">
+                            <field name="tax_id"/>
+                            <field name="liability_account_id"/>
+                        </group>
+                        <field name="note" placeholder="Catatan..."/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="action_pbjt_config" model="ir.actions.act_window">
+            <field name="name">Konfigurasi PBJT</field>
+            <field name="res_model">pbjt.outlet.config</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <!-- ================= REKONSILIASI PBJT ================= -->
+        <record id="view_pbjt_recon_tree" model="ir.ui.view">
+            <field name="name">pbjt.reconciliation.tree</field>
+            <field name="model">pbjt.reconciliation</field>
+            <field name="arch" type="xml">
+                <list string="Rekonsiliasi PBJT">
+                    <field name="pos_config_id"/>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                    <field name="sales_gross" sum="Penjualan"/>
+                    <field name="dpp" sum="DPP"/>
+                    <field name="real_tax" sum="PBJT Riil"/>
+                    <field name="negotiated_amount" sum="Dibayar"/>
+                    <field name="gap" sum="Selisih"/>
+                    <field name="is_exempt"/>
+                    <field name="state" widget="badge"/>
+                </list>
+            </field>
+        </record>
+
+        <record id="view_pbjt_recon_form" model="ir.ui.view">
+            <field name="name">pbjt.reconciliation.form</field>
+            <field name="model">pbjt.reconciliation</field>
+            <field name="arch" type="xml">
+                <form string="Rekonsiliasi PBJT">
+                    <header>
+                        <button name="action_recompute" type="object"
+                                string="Hitung Ulang" class="btn-primary"/>
+                        <button name="action_mark_done" type="object"
+                                string="Tandai Selesai"
+                                invisible="state == 'done'"/>
+                        <field name="state" widget="statusbar"/>
+                    </header>
+                    <sheet>
+                        <group>
+                            <group string="Outlet &amp; Periode">
+                                <field name="config_id"/>
+                                <field name="pos_config_id"/>
+                                <field name="date_from"/>
+                                <field name="date_to"/>
+                                <field name="perda_ref"/>
+                            </group>
+                            <group string="Kebijakan">
+                                <field name="rate"/>
+                                <field name="price_include"/>
+                                <field name="exempt_omzet_month" widget="monetary"/>
+                                <field name="is_exempt"/>
+                            </group>
+                        </group>
+                        <group string="Perhitungan PBJT">
+                            <field name="sales_gross" widget="monetary"/>
+                            <field name="dpp" widget="monetary"/>
+                            <field name="real_tax" widget="monetary"/>
+                        </group>
+                        <group string="Rekonsiliasi Bapenda">
+                            <field name="negotiated_amount" widget="monetary"/>
+                            <field name="gap" widget="monetary"
+                                   decoration-danger="gap &gt; 0"
+                                   decoration-success="gap &lt;= 0"/>
+                        </group>
+                        <field name="note" placeholder="Catatan rekonsiliasi..."/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <record id="view_pbjt_recon_search" model="ir.ui.view">
+            <field name="name">pbjt.reconciliation.search</field>
+            <field name="model">pbjt.reconciliation</field>
+            <field name="arch" type="xml">
+                <search string="Rekonsiliasi PBJT">
+                    <field name="pos_config_id"/>
+                    <field name="date_from"/>
+                    <filter name="draft" string="Draft" domain="[('state','=','draft')]"/>
+                    <filter name="done" string="Selesai" domain="[('state','=','done')]"/>
+                    <group>
+                        <filter name="group_outlet" string="Outlet"
+                                context="{'group_by': 'pos_config_id'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <record id="action_pbjt_reconciliation" model="ir.actions.act_window">
+            <field name="name">Rekonsiliasi PBJT</field>
+            <field name="res_model">pbjt.reconciliation</field>
+            <field name="view_mode">tree,form</field>
+            <field name="context">{'search_default_group_outlet': 1}</field>
+        </record>
+
+        <!-- ================= MENU ================= -->
+        <menuitem id="menu_pbjt_root" name="PBJT (Pajak Daerah)"
+                  sequence="85"/>
+        <menuitem id="menu_pbjt_config" name="Konfigurasi Outlet"
+                  parent="menu_pbjt_root" action="action_pbjt_config" sequence="10"/>
+        <menuitem id="menu_pbjt_reconciliation" name="Rekonsiliasi"
+                  parent="menu_pbjt_root" action="action_pbjt_reconciliation" sequence="20"/>
+    </data>
+</odoo>

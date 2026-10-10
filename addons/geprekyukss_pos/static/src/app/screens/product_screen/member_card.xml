@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
+    <!--
+        Hanya TEMPLATE komponen. Titik sisipnya TIDAK lagi di sini.
+
+        Sebelumnya berkas ini juga memuat:
+            <t t-inherit="point_of_sale.OrderWidget" t-inherit-mode="extension">
+                <xpath expr="//div[hasclass('order-container')]" position="before"><MemberCard/></xpath>
+        Itu MATI DUA KALI:
+          1. `point_of_sale.OrderWidget` tidak ada di Odoo 19 (sudah dihapus; yang ada
+             `point_of_sale.OrderSummary` + `OrderDisplay`) → bundle hanya mencetak
+             console.error dan tambalan dilewati, kartu member tidak pernah tampil.
+          2. `//div[hasclass('order-container')]` hidup di template `OrderDisplay`,
+             bukan di `OrderSummary` — xpath lintas-template tidak pernah cocok.
+
+        Sisipan sekarang dikerjakan di `product_screen_layout_patch.xml`
+        (induk `point_of_sale.ProductScreen`, target `//OrderSummary` — elemen biasa,
+        bukan akar template) dan komponen member didaftarkan ke ProductScreen.components
+        di `overrides/models/models.js`.
+    -->
     <t t-name="geprekyukss_pos.MemberCard">
         <div class="gy-member-card" t-if="partner" t-on-click="selectCustomer" role="button">
             <div class="gy-member-avatar"><t t-esc="initials"/></div>
@@ -20,11 +38,5 @@
             <div class="gy-member-avatar"><i class="fa fa-user"/></div>
             <div class="text-muted">Pilih Member</div>
         </div>
-    </t>
-
-    <t t-inherit="point_of_sale.OrderWidget" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('order-container')]" position="before">
-            <MemberCard/>
-        </xpath>
     </t>
 </templates>

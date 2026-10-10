@@ -1,11 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
+    <!--
+        IKON KATEGORI (emoji / gambar) — disisipkan sebelum nama kategori.
+        Diatur per-kategori di: Point of Sale > Konfigurasi > Kategori PoS > "Ikon Preset".
+        Datanya datang dari `getChildCategoriesInfo` (category_selector_patch.js).
+    -->
     <t t-inherit="point_of_sale.CategorySelector" t-inherit-mode="extension">
         <xpath expr="//span[@t-if='category.name']" position="before">
             <span t-if="category.gyIcon and !category.gyIconIsImage"
                 class="gy-category-emoji me-1" t-esc="category.gyIcon"/>
             <img t-if="category.gyIcon and category.gyIconIsImage"
                 t-att-src="category.gyIcon" class="gy-category-emoji-img me-1" alt="icon"/>
+        </xpath>
+
+        <!--
+            PENANDA CHIP AKTIF — kunci terakhir pada t-att-class di bawah.
+            Nama kelasnya (penanda gaya di SCSS section 2) sengaja TIDAK ditulis
+            di komentar ini: nama BEM memakai dua tanda hubung berturut-turut,
+            dan XML MELARANG dua tanda hubung di dalam komentar — seluruh berkas
+            templat langsung gagal dimuat. Sudah pernah terjadi di fase ini;
+            penjelasan lengkapnya ada di category_selector_patch.js.
+
+            Kenapa atributnya DIGANTI, bukan ditambah: sebuah elemen hanya boleh
+            punya SATU t-att-class, dan Odoo sudah memakai atribut itu untuk chip
+            ini. Jadi ekspresi Odoo di bawah dikutip APA ADANYA dari
+            point_of_sale CategorySelector.xml lalu ditambah satu kunci milik
+            kita. Kalau kelak Odoo mengubah ekspresinya, yang hilang hanya
+            perilaku bawaan chip (bukan tema kita) — dan itu langsung terlihat
+            sebagai chip yang tidak lagi memudar saat tidak dipilih.
+
+            Kenapa perlu kelas sendiri: kelas opacity-75 milik Odoo TIDAK bisa
+            dipakai menebak chip aktif. Hasil ukur 19 Sep 2026: keenam chip
+            tampil aktif, karena kategori beranak
+            dan leluhur terpilih tidak pernah mendapat kelas itu. Nilai
+            category.gyIsActive dihitung di category_selector_patch.js dari
+            selectedCategory.id.
+        -->
+        <xpath expr="//button[hasclass('category-button')]" position="attributes">
+            <attribute name="t-att-class">{
+                'border-0': category.isChildren and !this.isAncestorOrSelected(category),
+                'opacity-75 border-0': !category.isChildren and !category.isSelected,
+                'justify-content-center': ui.isSmall,
+                'gy-category--active': category.gyIsActive
+            }</attribute>
         </xpath>
     </t>
 </templates>

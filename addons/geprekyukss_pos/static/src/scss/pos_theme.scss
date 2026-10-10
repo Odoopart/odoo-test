@@ -3,14 +3,234 @@
    GEPREK YUKSS — POS LIGHT THEME
    =============================================================================
    Restyles the stock Odoo 19 Point of Sale screen to match the reference
-   screenshot (light background, red-orange gradient accents, white cards
-   with soft shadow).
+   (light background, white cards with soft shadow, red accents).
 
    CHANGE LOG:
+   - v14 (INI — bar aksi bawah di ponsel, <768px). Dua tombol yang paling sering disentuh
+     kasir di ponsel — `Bayar Rp 22.000,00` dan `Keranjang Belanja · 2 item` di
+     dasar layar — terukur masih memakai ungu merek Odoo `rgb(113,99,158)` dengan
+     radius 4px: tidak ada satu pun aturan kita yang mengenainya. Section 24
+     memberi bar itu gaya pos2 (Bayar = merah penuh bila keranjang ada isinya,
+     Keranjang = putih berbingkai, radius 10px, tinggi 52px ber-token
+     `--gy-mobile-btn-h`), dan `min-height` sengaja ditulis ulang karena bawaan
+     Odoo 70px menang atas `height`.
+   - v13 (Fase E: drawer sidebar di <992px). Rel sidebar berhenti
+     disembunyikan (`display: none`) dan jadi drawer off-canvas, jadi menu
+     Outlet/Self Order/Grabfood/Shopeefood/Gofood/Pengaturan + Tutup Kasir
+     akhirnya terjangkau di ponsel & tablet. Isi: section 23 (tombol pemicu,
+     panel, backdrop, tombol ×), token --gy-drawer-w, dan reservasi ruang
+     `.pos-leftheader` di section 1b disesuaikan karena kendali pertama sekarang
+     adalah tombol pemicu (bukan tombol Odoo). Logikanya di sidebar.js
+     (gyDrawer + closeGyDrawer + GySidebarToggle), markup-nya di sidebar.xml,
+     titik sisip tombolnya di topbar_patch.xml. Kenapa <992px dan bukan resep
+     tablet design (sidebar penuh) — lihat kepala section 23.
+     TERUKUR 22 Sep (390/601/834/991): buka via tombol -> left 0 + aria-expanded
+     true + backdrop selebar viewport, fokus pindah ke item nav pertama; Esc,
+     klik backdrop, dan tombol x semuanya menutup DAN mengembalikan fokus ke
+     tombol pemicu. Di 992px ke atas: tombol display:none, rel tetap 200px di
+     x=0. 0 error konsol & 0 permintaan gagal di 390/601/834/991/992/1440.
+     Satu jebakan yang tidak terlihat dari CSS (ditulis juga di sidebar.js):
+     `reactive()` tingkat modul TANPA `useState()` tidak pernah membuat komponen
+     render — drawer terukur "tidak bergerak" tanpa satu pun error konsol.
+   - v12 (merek: logo kembali + layout tablet & ponsel). Permintaan pemilik
+     proyek: label perusahaan di POS hanya tertulis "Geprek Yukss" tanpa logo.
+     Sebabnya keputusan Fase 1 yang melepas gambar logo dari blok merek sidebar
+     mengikuti board pos2; sekarang logo.jpg dikembalikan. Sekaligus DUA cacat
+     terukur di brand navbar (<992px) yang belum pernah diukur:
+       * blok @media (max-width:600px) ditulis SEBELUM aturan dasar, jadi
+         `width: 32px` milik ponsel kalah dari `width: 44px` aturan dasar —
+         di 390px blok merek berhenti PERSIS di tepi kendali pertama (60 vs 60),
+         dan nama merek sama sekali tidak tampil (wordmark `display:none`);
+       * di 834px blok merek (164) menumpuk kendali pertama (158) 6px.
+     Sekarang: sidebar 34px logo + wordmark 17px + tagline (dulu 20px tanpa
+     logo); navbar 40px (601-991px, wordmark + tagline) dan 30px (<=600px,
+     wordmark satu baris tanpa tagline); reservasi ruang `.pos-leftheader`
+     166px dan 140px, semuanya hasil ukur. `--gy-radius-mark` (10px) akhirnya
+     dipakai sebagai sudut kotak logo.
    - v1: dark theme (background gelap, orange/gold accents).
-   - v2 (this file): pivoted to light theme per new reference screenshot.
+   - v2: pivoted to light theme per new reference screenshot.
      Structure/section order kept identical to v1 so diffs stay readable;
      only color tokens + category/badge visual treatment changed.
+   - v3: aksen pindah dari merah-oranye (#e8432f) ke hijau (#00932a).
+     Token --gy-red/--gy-red-2 DIGANTI NAMA jadi --gy-accent/--gy-accent-2
+     supaya nama token tidak bertentangan dengan isinya. Nilai hardcoded yang
+     masih merah disapu ke token, dan dua token alias mati (--gy-orange,
+     --gy-orange-2) dihapus.
+   - v4 (INI — overhaul tampilan, Fase 1): tema hijau DIGANTI PENUH dengan tema
+     terang-beraksen-merah (board "MENU / ORDER – MODE GRID").
+     Yang berubah di fase ini:
+       * token :root disetel ulang ke nilai pos2 (aksen #c90e05, latar rata
+         #fbfbfb, tambah --gy-divider/--gy-online/--gy-accent-logo/… serta
+         token geometri sidebar), bayangan tidak lagi berbasin kehijauan;
+       * sidebar (section 20): lebar 240→200px, padding 33/12/18, bar nav
+         50px sudut 8px, label 16px/500, ikon 16px MENGIKUTI warna barisnya;
+         item aktif jadi tint merah selebar isinya (bukan pill hijau penuh),
+         ditambah state hover/ditekan/cincin fokus;
+       * merek sidebar: wordmark dua warna TANPA gambar logo; kartu kasir di
+         footer sidebar dihapus — tempatnya di topbar (Fase 2).
+     Belum dikerjakan di fase ini: chip &
+     kartu produk (F3), panel order (F4), topbar & kartu kasir (F2), sapu bersih
+     token pensiun (F5).
+   - v5 (INI — pos2, Fase 2 + Fase 3):
+     * F2 topbar: tinggi 72px (section 21), judul halaman, search radius 10px,
+       tombol barcode 38×38, dan kartu kasir (avatar + nama + status Online);
+     * F3 chip kategori: status aktif lewat kelas SENDIRI `gy-category--active`
+       (dihitung dari selectedCategory.id), bukan tebakan `:not(.opacity-75)`;
+       tinggi 35px, radius 10px, aktif = isian merah penuh + label/ikon putih;
+       satu baris gulir & ukuran ikon ikut pindah ke section 2 (section 14/15
+       dihapus);
+     * F3 kartu produk: radius 12px (dipaksa `!important` karena utility
+       `rounded-3` milik Odoo menang — dulu ter-render 6px), foto 137×99,
+       judul maks 2 baris, harga GELAP (bukan merah);
+     * token --gy-radius-lg & --gy-radius-pill dipensiunkan, tambah
+       --gy-chip-h/--gy-chip-pad-x/--gy-chip-icon/--gy-card-ratio. Panel order
+       masih milik F4.
+   - v7 (pos2, Fase 4b): PANEL ORDER DILEBARKAN. Board menulis 222px, tapi
+     angka itu hanya bisa dipakai di kertas: dengan data nyata (nama preset
+     "Makan di Tempat" 119px, stepper qty yang board tidak punya) panel 222px
+     memaksa judul + pill ke dua baris dan baris item jadi tiga pita. Yang
+     berubah (section 22 + 15):
+       * `--gy-order-w` 222px -> 300px (264px di 992–1279px supaya grid produk
+         tetap 4 kolom di layar 1280 & 1024). Kartu produk menyusut sendirinya
+         (grid `minmax(0, 1fr)` + 4 kolom tetap), tidak ada gulir horizontal;
+       * isi baris item jadi DUA KOLOM lewat `display: grid` pada pembungkus
+         `<div class="d-flex flex-column w-100">`: kolom 1 = nama/qty (2 baris)
+         + stepper, kolom 2 = harga rata kanan sejajar baris pertama. Sebelumnya
+         harga turun ke pita ketiga (baris 107–124px) karena ia elemen blok
+         setelah `.line-details`;
+       * padding baris 12px -> 10px, padding samping panel 12px -> 14px
+         (`--gy-order-pad-x`) supaya header, daftar, ringkasan, dan tombol
+         rata pada satu garis;
+       * pill status dipadatkan (11px, padding 4/8) supaya header muat SATU
+         baris di panel baru; `flex-wrap` tetap ada sebagai jaring pengaman.
+   - v11 (INI — SISA ketidakrataan panel order setelah v10): v10 membereskan
+     baris tombol, tapi masih ada empat hal yang tidak duduk di rel yang sama.
+     Diukur di browser (1366×768, panel 340px, 3 item):
+       * pita "Tambah Catatan" selebar PANEL PENUH (x 1027→1366) sementara garis
+         ringkasan di atasnya selebar ISI (1041→1352) dan header juga 1041→1352:
+         tiga garis dalam 90px dengan dua rentang berbeda;
+       * info-list per baris (`ms-2` bawaan) mulai di x=1050, bukan 1042;
+       * di panel >=1440px (440px) tombol ⋮ terlempar SENDIRIAN ke baris sendiri
+         (terukur: Simpan Order x=1775 sebaris chip, ⋮ di (1495,958)) — bug ini
+         sudah ada sejak v10 dan tidak terlihat karena v10 diukur di 1366px;
+       * `gap: 6px` di baris kontrol TIDAK PERNAH berlaku: baris itu membawa
+         `gap-2`, dan utility Odoo ditulis `!important` (terukur di bundel:
+         `.gap-2{gap: 8px !important}`). Jarak sebenarnya 8px — sekarang token
+         `--gy-control-gap` bernilai 8px dan dipasang dengan `!important` supaya
+         satu angka benar-benar mengatur baris kontrol DAN baris tombol bayar.
+     Yang berubah: pita catatan diberi `margin: 0 var(--gy-order-pad-x)` +
+     padding samping 0 (teks tetap di 1041); `flex-basis` Simpan Order dihitung
+     dari lebar ⋮ + `--gy-control-gap` sehingga keduanya SELALU sebaris (dengan
+     1px cadangan — pada selisih persis 0 hasil ukurnya ⋮ tetap pindah baris,
+     karena pemenggalan baris flex terjadi sebelum pembulatan sub-piksel);
+     dan info-list dilepas dari `ms-2`. Baris chip DIBIARKAN `space-between`
+     (bawaan Odoo) setelah dicoba diratakan kiri: di panel 440px hasilnya lubang
+     143px di kanan. Tidak ada warna/ukuran yang diubah.
+     Terukur sesudah v11 (3 item, 0 error konsol, tanpa gulir horizontal).
+     Kolom "rel" = x awal..akhir header, pita catatan, dan ringkasan — ketiganya
+     kini SATU nilai; kolom terakhir = baris Simpan Order + ⋮:
+       1024px: panel 264 · rel 775..1010 · chip "Makan di Tempat" di baris ke-2
+               (tiga chip tidak muat di 235px — sudah begitu sejak v10)
+               · Simpan Order + ⋮ = 776..1010
+       1366px: panel 340 · rel 1041..1352 · chip sebaris · 1042..1352
+       1440px: panel 440 · rel 1015..1426 · chip sebaris · 1016..1426
+       1920px: panel 440 · rel 1495..1906 · chip sebaris · 1496..1906
+     Catatan penting: `odopos.png` (22:14) yang memicu laporan ini diambil
+     SEBELUM v10 (22:26–22:34) — di situ masih terlihat empat baris tombol
+     bertumpuk, jadi laporan itu memperlihatkan aset lama, bukan hasil v10.
+   - v10 (kerapian panel order, keluhan "panel kanan berantakan"):
+     Bukan mengubah warna/ukuran desain, tapi MEMBERESKAN TATA LETAK yang tidak
+     rata. Yang diukur di browser (1366×768, panel 340px, 3 item) SEBELUM v10:
+       * tombol hapus per item tidak punya rel: ia rata kanan hanya di dalam
+         kolom nama (kolom harga ada di sebelahnya), jadi terukur di x
+         1229/1232/1235 dari tiga baris — x-nya BERGESER tiap baris mengikuti
+         panjang nominal harga, dan 100px di sebelah KIRI tepi kanan panel (1352);
+       * ikon hapus terukur rgb(18,27,33) (hitam) karena `.pos .orderline *` di
+         section 10 menang atas warna aksen di section 16;
+       * baris kontrol jadi LIMA tumpuk tombol berbeda bentuk (chips / Simpan
+         Order / ⋮ / Baru / bayar) = 232px dari 696px panel, sehingga daftar item
+         cuma kebagian 246px dan SUDAH menggulir dengan tiga item;
+       * chip preset berwarna sendiri (biru pucat rgb(187,215,248)) di antara
+         tombol putih/abu — sisa `preset.color` bawaan Odoo.
+     Yang berubah:
+       * `orderline_patch.xml`: stepper+hapus pindah dari DALAM `.line-details`
+         ke SAMPINGNYA (anak langsung pembungkus grid). Tanpa itu, "lebar panel"
+         mustahil dicapai dari CSS karena grid hanya memberi kolom nama;
+       * baris item kini TIGA baris grid: nama | harga, lalu stepper+hapus
+         selebar panel, lalu info-list. Di baris itu stepper rata KIRI (sejajar
+         qty/nama) dan tombol hapus rata KANAN (sejajar harga & tombol bersihkan
+         di header);
+       * ikon hapus dikembalikan ke `--gy-accent`;
+       * tombol ⋮ naik ke baris Simpan Order (46×46), dan tombol "Baru" turun ke
+         baris tombol bayar — jadi tiga baris tombol, bukan lima;
+       * chip preset dinetralkan ke `--gy-surface-2`, seragam dengan dua chip
+         di sebelahnya.
+   - v9 (kartu menu di 992-1149px): 4 KOLOM -> 3 KOLOM. Di rentang itu
+     lebar konten sudah dimakan sidebar 200px + panel Order 264px, sehingga 4
+     kolom menyisakan kartu cuma **120px** di 1024px (TERUKUR) — jauh di bawah
+     ukuran design 171px (bahkan di bawah kartu di ponsel, 178px). Dengan
+     3 kolom kartunya 155px (992px) sampai 207px (1149px).
+     Batas 1150px dipilih dengan hitungan, bukan selera: saat satu kolom
+     DITAMBAH, kartu selalu melompat turun sebesar (lebar_pane + 16) / 12,
+     jadi lompatannya paling kecil kalau peralihannya dibuat SEDINI mungkin.
+     1150px adalah titik paling awal di mana kartu 4 kolom masih >= 150px
+     (152px tepat di 1150px) sementara kartu 3 kolom terakhir 207px (di
+     1149px) — lompatannya 55px. Versi pertama v9 memakai batas 1199px
+     (lompatan 60px: 224 -> 164px); digeser ke 1150px atas permintaan pemilik
+     proyek. Dari 1150px ke atas tetap 4 kolom, jadi rentang 1150-1279px tidak
+     berubah sama sekali.
+   - v8 (panel order vs grid menu): PANEL ORDER DILEBARKAN LAGI, KARTU
+     MENU DIKECILKAN. Keluhannya: "panel order kanan kecil sekali". Sebabnya
+     bukan bug: `--gy-order-w` dipatok 300px untuk SEMUA lebar >=1280px,
+     sedangkan grid produk `repeat(4, minmax(0, 1fr))` menelan seluruh sisa
+     lebar — jadi makin besar layar, makin besar KARTUNYA dan makin kecil
+     pangsa panel (300/1440 = 21%, 300/1920 = 16%; kartu di 1440 TERUKUR
+     215px, padahal ukuran design 171px). Yang berubah:
+       * `--gy-order-w` 300px -> 340px (dipakai 1280-1439px) dan 440px
+         (>=1440px; pilihan pemilik proyek, pola panel checkout marketplace:
+         +-30% lebar layar). 992-1279px TETAP 264px karena di situ grid masih
+         4 kolom di 1024/1280. Angka TETAP, bukan `vw`: mode letterbox
+         menskalakan seluruh layar 1280x800, dan `vw` dihitung dari viewport
+         asli — panel berbasis vw akan memakan kotak design itu.
+       * grid produk: 5 kolom di >=1600px dan 6 kolom di >=1800px, supaya
+         kartu tetap mendekati ukuran design (171px) alih-alih ikut membesar
+         mengikuti lebar layar.
+     TERUKUR di browser (Chromium 131, sesi POS nyata, 0 error konsol di
+     1024/1280/1440/1600/1920 — cara mengukur: scripts/pos_browser_check.mjs):
+       1280: panel 340 · kartu 4 x 165px (sebelumnya 4 x 175px)
+       1440: panel 440 · kartu 4 x 180px (sebelumnya 4 x 215px)
+       1600: panel 440 · kartu 5 x 173px
+       1920: panel 440 · kartu 6 x 194px
+     Header panel jadi SATU baris sejak >=1280px (terukur tinggi 47px, pill
+     sebaris dengan judul) — menutup catatan F4 butir 1 yang dulu bikin header
+     dua baris saat preset panjang. Di 1024 tetap dua baris (79px) karena
+     panelnya masih 264px.
+   - v6 (pos2, Fase 4): PANEL ORDER (section 22 baru, semuanya di-scope
+     `@media (min-width: 992px)` + `.product-screen` supaya struk tidak ikut):
+       * lebar panel dari `--gy-order-w` — menimpa `width`/`max-width` Odoo
+         yang berbeda per breakpoint (450px, 400px); (nilainya 222px di v6,
+         dinaikkan jadi 300px di v7 — lihat entri v7 di atas);        * header "Order #<kode>" (17px/700, section 15) + pill status + garis
+         pemisah. Judul `flex: 0 0 auto` (TIDAK boleh menyusut) & pill
+         `flex: 0 1 auto` + elipsis; header `flex-wrap` sehingga pill turun ke
+         baris kedua kalau nama preset panjang — tanpa itu judul terukur 43px
+         (di panel 300px baris kedua itu tidak lagi terpakai: lihat v7);
+       * baris item jadi baris polos (tanpa border/bayangan), nama di-clamp 2
+         baris DI SPAN TEKSNYA (bukan di wadah `.product-name` yang merupakan
+         wadah flex — kesalahan pertama membuat baris setinggi 140px), harga gelap;
+       * baris `.line-details` dibuat MELIPAT karena stepper qty (tidak ada di
+         board) menghabiskan lebar yang dibutuhkan nama;
+       * scrollbar daftar order dibuat tipis 6px + `scrollbar-gutter: stable`
+         supaya lebar baris tidak bergeser saat daftar mulai menggulir;
+       * ringkasan: gap 12px, atas bergaris, Total 20px merah (section 5);
+       * tombol bayar: barisnya sendiri (`flex: 1 0 100%` di baris `.actionpad`
+         yang dibuat `flex-wrap`), 197x46 di dalam panel. WAJIB menulis
+         `min-height` juga — Odoo menetapkan `min-height: 70px` untuk
+         `.pay-order-button` dan min-height menang atas height;
+       * tombol "Simpan Order" 197x46 putih berbingkai (section 22 + section 15),
+         tombol "Baru" dilepas dari `w-50` dan lebarnya mengikuti isinya.
+     Konsekuensi yang disadari: header
+     jadi dua baris saat preset panjang, dan baris item jadi tiga pita karena
+     stepper qty.
 
    IMPORTANT — READ BEFORE TWEAKING:
    Odoo's POS DOM structure/class names are NOT part of a stable public API
@@ -32,36 +252,157 @@
    ============================================================================= */
 
 :root {
-    // ---- Design tokens extracted from the light-theme reference screenshot -
-    --gy-bg: #f5f5f5;
+    // ---- Token desain (tema terang, aksen MERAH) ----
+    // Angka yang ditandai "terukur dari board" dipakai 1:1; yang ditandai
+    // (indikatif) adalah taksiran, supaya jelas mana angka pasti mana perkiraan.
+    //
+    // Nama token tetap --gy-* (bukan --color-* seperti paket desain): seluruh
+    // berkas ini dan templat-templat di app/ sudah memakai --gy-*.
+    --gy-accent: #c90e05;              // board: chip aktif, pill Dine In, CTA, bar aktif sidebar
+    --gy-accent-2: #a80c04;            // (indikatif) aksen saat hover/ditekan
+    --gy-accent-logo: #d80a07;         // board: merah wordmark
+    --gy-accent-soft: #fbe6e4;         // (indikatif) tint merah: bar aktif sidebar, tombol hapus item
+    --gy-accent-soft-hover: #f8d6d3;   // (indikatif)
+    --gy-accent-soft-pressed: #f3c3bf; // (indikatif)
+    // Penanda "hangat"/merusak. Dipertahankan oranye selama badge PEDAS belum
+    // diputuskan — kalau ikut jadi merah,
+    // badge PEDAS jadi kembar dengan badge BARU.
+    --gy-danger: #ee6107;
+
+    // Latar halaman RATA #fbfbfb (board). Sebelumnya gradien mint; gradien mint
+    // sudah tidak dipakai di mana pun.
+    // CATATAN: sebagai `color:`/`border-color:` nilai ini tetap sah karena bukan
+    // gradien lagi, tapi tetap dipakai hanya sebagai `background:`.
+    --gy-bg: #fbfbfb;
     --gy-surface: #ffffff;
-    --gy-surface-2: #fafafa;
-    --gy-surface-3: #f0f0f1;
-    --gy-border: rgba(0, 0, 0, 0.08);
-    --gy-border-strong: rgba(0, 0, 0, 0.14);
+    --gy-surface-2: #f4f6f7;           // (indikatif) hover baris nav
+    --gy-surface-3: #e9edf0;           // (indikatif) baris nav ditekan
+    --gy-border: #ebecee;              // board: border kartu/chip/panel
+    --gy-border-strong: #dfe3e6;       // (indikatif) border kartu saat hover
+    --gy-divider: #eeeff1;             // board: garis bawah topbar & header panel
+    --gy-online: #2ba04a;              // board: label "Online" kartu kasir
 
-    --gy-red: #e8432f;
-    --gy-red-2: #ff5a3c;
-    // Aliases kept so any selector still written as --gy-orange keeps working.
-    --gy-orange: var(--gy-red);
-    --gy-orange-2: var(--gy-red-2);
+    --gy-gold: #f0b429;                // badge BEST SELLER → nasibnya menunggu §9.1
+    --gy-gold-2: #fed23a;
 
-    --gy-gold: #f0b429;
-    --gy-gold-2: #ffd76a;
-    --gy-green: #16a34a;
+    --gy-text: #121b21;                // board: teks (dulu ini warna permukaan sidebar gelap)
+    --gy-text-muted: #6b7480;          // (indikatif) label sekunder
+    --gy-text-faint: #9aa1a8;          // (indikatif) label paling redup
 
-    --gy-text: #1a1a1a;
-    --gy-text-muted: #6b6b6f;
-    --gy-text-faint: #9a9a9e;
+    // Radius. Enam nama pertama = nama pos2; empat nama terakhir (pensiun) MASIH
+    // DIPAKAI section 2–16 dan baru dihapus saat section-nya pindah ke pos2
+    // (F2–F4). Sengaja tidak dihapus sekarang: memutus `var()` yang masih dipakai
+    // membuat nilai jadi tidak sah (bukan error, tapi gaya diam-diam hilang).
+    --gy-radius-nav: 8px;              // board: sudut bar/pill nav ±7px
+    --gy-radius-mark: 10px;            // (indikatif) sudut kotak logo merek — dipakai .gy-sidebar__logo & .gy-header-brand img
+    --gy-radius-control: 10px;         // board: sudut chip & tombol panel order
+    --gy-radius-card: 12px;            // board: sudut kartu produk
+    --gy-radius-thumb: 8px;            // board: sudut foto di dalam kartu (BELUM dipakai — foto masih menempel tepi kartu)
+    --gy-radius-panel: 16px;           // board: sudut panel Order (dipakai F4)
+    // --gy-radius-lg dan --gy-radius-pill PENSIUN di Fase 3: chip & kartu produk
+    // sudah pindah ke --gy-radius-control/-card, dan tidak ada elemen lain yang
+    // memakainya (diperiksa dengan `grep -rn` ke seluruh addon). Nama lama yang
+    // masih dipakai section lain: --gy-radius-md dan --gy-radius-sm.
+    --gy-radius-md: 14px;              // (pensiun → --gy-radius-control/-panel)
+    --gy-radius-sm: 8px;               // (pensiun → --gy-radius-thumb/-mark)
 
-    --gy-radius-lg: 18px;
-    --gy-radius-md: 12px;
-    --gy-radius-sm: 8px;
-    --gy-radius-pill: 999px;
+    // Cincin fokus keyboard (pos2: 2px + offset 2px, warna aksen).
+    --gy-focus-ring: var(--gy-accent);
+    --gy-focus-ring-w: 2px;
+    --gy-focus-ring-offset: 2px;
 
-    // Light theme uses soft shadow instead of heavy dark-mode shadow.
-    --gy-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-    --gy-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    // ---- Geometri sidebar (board pos2: panel 196px, bar nav 50px) ----
+    // Dipakai section 20. Angka board dipakai 1:1 kecuali lebar panel (196→200px,
+    // supaya ada satu angka bulat untuk grid 3 kolom).
+    --gy-sidebar-w: 200px;             // board: 196px
+    // Lebar drawer (<992px, section 23). 240px > 200px supaya label item nav
+    // "Shopeefood"/"Pengaturan" lega, dan 82vw supaya di layar sempit panelnya
+    // tidak menutupi seluruh layar (desain: min(240px, 82vw)).
+    --gy-drawer-w: min(240px, 82vw);
+    --gy-sidebar-pad-x: 12px;          // board: bar aktif mulai 12px dari tepi panel
+    --gy-sidebar-pad-top: 33px;        // board: blok merek mulai 33px dari tepi atas
+    --gy-sidebar-pad-bottom: 18px;     // board: baris Logout berhenti 18px dari dasar
+    --gy-brand-h: 44px;                // board: tinggi blok merek
+    --gy-brand-gap: 33px;              // board: jeda blok merek → baris nav pertama
+    --gy-nav-h: 50px;                  // board: tinggi bar/pill nav
+    --gy-nav-gap: 6px;                 // board: pitch 56px − tinggi 50px
+    --gy-nav-pad: 18px;                // board: ikon mulai 18px dari tepi bar
+    --gy-nav-icon-gap: 18px;           // board: jeda ikon → label
+    --gy-icon-size: 16px;              // board: ikon solid 16×16
+    --gy-fs-nav: 16px;                 // board: tinggi huruf-ke-atas 12px ≈ font 16px
+    // 17px, bukan 20px: sejak logo gambar kembali masuk blok merek sidebar
+    // (22 Sep 2026), wordmark berbagi ruang 200px dengan kotak logo 34px +
+    // jeda. Pada 20px, "GeprekYukss" terukur 101px dan total blok 153px dari
+    // 170px yang tersedia — masih muat, tapi tanpa sisa: satu huruf tambahan
+    // apa pun akan terpotong karena .gy-sidebar memakai overflow: hidden.
+    --gy-fs-brand: 17px;               // (indikatif) wordmark satu baris
+
+    // ---- Geometri topbar (board pos2: tinggi 78px, search 300×38) ----
+    --gy-topbar-h: 72px;               // board: 78px (y 127–205)
+    --gy-search-w: 300px;              // board: kolom search ±300px
+    --gy-search-h: 38px;               // design: .search height 38px
+    --gy-iconbtn-size: 38px;           // design: .icon-btn 38×38, sudut 10px
+
+    // ---- Geometri baris chip & kartu produk (board pos2) ----
+    --gy-chip-h: 35px;                 // board: chip aktif 87×35px
+    // Rasio foto kartu. Board: kartu 137px, fotonya 99px (99/137 = 72.26%).
+    // Angkanya disimpan dalam bentuk yang BENAR-BENAR dikonsumsi: Odoo memakai
+    // Bootstrap `.ratio-4x3`, yang menaruh tinggi kotak di `padding-top` lewat
+    // variabel `--aspect-ratio` pada ::before — BUKAN properti `aspect-ratio`.
+    // Satu mekanisme tinggi saja; kalau dipasang dua, keduanya bisa berbeda.
+    --gy-card-ratio: 72.26%;           // board: 137×99 → 99/137
+    --gy-chip-pad-x: 14px;             // board: teks chip mulai 14px dari tepi
+    --gy-chip-icon: 14px;              // design: .chip svg 14×14
+
+    // ---- Geometri panel Order (board pos2: panel 222px) ----
+    // Nilai di sini berlaku untuk 1280-1439px. Di 992-1279px diturunkan ke 264px,
+    // dan di >=1440px dinaikkan (section 22) — panel selebar tetap di SEMUA
+    // layar besar dulu membuat pangsanya menyusut saat layar membesar (keluhan
+    // "panel kanan kecil sekali", v8). Di 992-1149px grid-nya 3 kolom (v9),
+    // bukan 4, supaya kartunya tidak tinggal 120px.
+    --gy-order-w: 340px;               // board menulis 222px (terukur dari gambar),
+                                       // tapi dinaikkan setelah dipakai data nyata:
+                                       // di 222px judul + pill preset + tombol
+                                       // bersihkan tidak muat sebaris dan baris item
+                                       // jadi tiga pita. Riwayat: 300px (v7) lalu
+                                       // 340px (v8, hanya 1280-1439px) dan 440px
+                                       // (>=1440px — lihat section 22).
+    --gy-remove-size: 20px;            // board: tombol hapus item, lingkaran 20px
+    --gy-order-btn-h: 46px;            // design: .btn di panel order 46px
+    --gy-mobile-btn-h: 52px;           // bar aksi bawah di ponsel (section 24).
+                                       // 52px = sasaran sentuh yang nyaman (>44px)
+                                       // tapi tetap lebih pendek dari bawaan Odoo
+                                       // (terukur 70px, dari `min-height` yang sama
+                                       //  dengan .pay-order-button) sehingga layar
+                                       // kasir di ponsel tidak habis oleh tombol.
+    --gy-control-gap: 8px;             // jarak antar tombol di baris kontrol panel order.
+                                       // Dipakai DUA kali di section 22: sebagai `gap`
+                                       // baris, dan di dalam hitungan `flex-basis` tombol
+                                       // Simpan Order — keduanya harus angka yang SAMA,
+                                       // kalau tidak barisnya tidak pernah pas 100%.
+                                       // Angkanya 8px, BUKAN 6px: baris itu membawa
+                                       // `gap-2`, dan di bundel Odoo utility ditulis
+                                       // `!important` — terukur `.gap-2{gap: 8px
+                                       // !important}` di point_of_sale.assets_prod.min.css.
+                                       // Jadi `gap: 6px` tanpa !important dulu diabaikan
+                                       // diam-diam (itulah kenapa ⋮ tetap terlempar).
+    --gy-order-scrollbar: 10px;        // lebar terukur scrollbar `thin` Chromium 131;
+                                       // dipakai untuk mengoreksi padding kanan daftar item
+                                       // supaya tepi baris item rata dengan Total/tombol
+    --gy-order-pad-x: 14px;            // (indikatif) padding samping panel order;
+                                       // board 12px, ditambah karena panelnya lebih lebar
+                                       // — dipakai header, daftar, ringkasan, dan tombol
+
+    // Bayangan: basis netral gelap-kebiruan (sama seperti warna teks), BUKAN
+    // basis kehijauan seperti tema sebelumnya — aksen sudah merah, bayangan
+    // kehijauan akan terbaca sebagai sisa tema lama.
+    // --gy-shadow-md = penajaman untuk hover kartu; nilai "frame" yang jauh lebih
+    // berat (0 30px 80px) sengaja TIDAK dipakai untuk itu — di hover kartu ia
+    // terlihat seperti bayangan bocor. Tampilan yang dipilih juga full-bleed
+    // (panel mengisi penuh layar), bukan kartu mengambang berbingkai.
+    --gy-shadow: 0 10px 30px rgba(18, 27, 33, 0.06);
+    --gy-shadow-md: 0 16px 40px rgba(18, 27, 33, 0.1);
+    --gy-shadow-pill: 0 6px 18px rgba(201, 14, 5, 0.2);
 }
 
 // Base font: Poppins, benar-benar di-load via Google Fonts (bukan cuma nama
@@ -74,16 +415,21 @@
         "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-// Nama produk: jangan kepotong di 2 baris, kasih ruang 3 baris + font
-// yang proporsional supaya nama panjang tetap terbaca utuh.
+// Nama produk. Sebelumnya aturan ini MEMATIKAN potong-2-baris milik Odoo
+// (`display: block` + `white-space: normal`) supaya nama panjang terbaca utuh.
+// pos2 memilih yang sebaliknya: judul MAKSIMUM 2 baris dengan elipsis, supaya
+// tinggi kartu seragam di dalam grid (board §7.B2).
 .pos article.product .product-name {
-    display: block !important;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical !important;
+    -webkit-line-clamp: 2 !important;
     white-space: normal !important;
+    overflow: hidden !important;
     font-family: "Inter", sans-serif !important;
     font-weight: 600 !important;
-    font-size: 12px !important;
-    line-height: 1.3 !important;
-    color: #111111 !important;
+    font-size: 14px !important;        // design: .menu__title → --fs-md
+    line-height: 1.35 !important;
+    color: var(--gy-text) !important;
     -webkit-text-size-adjust: 100% !important;
     text-size-adjust: 100% !important;
 }
@@ -91,29 +437,22 @@
 /* ---------------------------------------------------------------------------
    1. HEADER (logo / search / member / cashier / theme toggle)
    ------------------------------------------------------------------------- */
-.pos .pos-leftheader,
-.pos .header-cashier,
-.pos-content > header {
+/* Kelas yang BENAR-BENAR dipakai Odoo 19 (dicek langsung di navbar.xml dan
+   cashier_name.xml): .pos-topheader, .pos-leftheader, .pos-rightheader,
+   .status-buttons, .cashier-name. Nama gaya Odoo <=16 (.header-cashier,
+   .header-button, .username, .pos-content > header) sudah dibuang: aturan itu
+   "hidup" tapi tidak pernah mengenai elemen apa pun. */
+.pos .pos-leftheader {
     background: var(--gy-surface);
-    border-bottom: 1px solid var(--gy-border);
     box-shadow: none;
 }
 
-.pos input.searchbox,
-.pos .searchbox input,
-.pos input[placeholder*="Search"] {
-    background: var(--gy-surface-2);
-    border: 1px solid var(--gy-border);
-    border-radius: var(--gy-radius-md);
-    color: var(--gy-text);
+// Search bar TIDAK diatur di sini lagi — lihat section 9, yang memakai kelas
+// ASLI Odoo (`.input-container` di dalam `.pos-rightheader`, lihat komponen
+// `point_of_sale.input`). Tiga selector lama di sini dibuang karena rapuh tanpa
+// terlihat rusak: `.searchbox` adalah nama Odoo <=16 yang tidak ada di 19, dan
+// `input[placeholder*="Search"]` hanya bekerja kalau bahasanya Inggris.
 
-    &::placeholder {
-        color: var(--gy-text-faint);
-    }
-}
-
-.pos .header-button,
-.pos .username,
 .pos .cashier-name {
     background: var(--gy-surface-2);
     border: 1px solid var(--gy-border);
@@ -122,19 +461,29 @@
 }
 
 /* ---------------------------------------------------------------------------
-   1b. HEADER BRAND (logo mark + wordmark + tagline)
-   NOTE: header_brand_patch.xml referenced here still does not exist in the
-   module (confirmed via `find addons/geprekyukss_pos -type f`) — this is
-   Tahap 3 in the roadmap, not done yet. These rules are harmless no-ops
-   until that XML patch actually renders a `.gy-header-brand` element; kept
-   here so Tahap 3 only needs to add the template, not touch this SCSS.
+   1b. BRAND di navbar — HANYA di bawah breakpoint lg (<992px)
+   Dipakai oleh `app/navbar/header_brand_patch.xml` (induk point_of_sale.Navbar,
+   disisipkan sebelum .pos-leftheader).
+
+   Di >=992px brand dibawa rel sidebar (section 20) dan brand navbar ini mati,
+   jadi selalu tepat satu logo.
+
+   URUTAN BLOK DI SINI PENTING — dan itu satu-satunya alasan penataannya begini:
+     1. aturan DASAR .gy-header-brand (termasuk ukuran `img`)
+     2. `min-width: 992px`    → matikan brand (sesudah dasar, supaya menang)
+     3. `max-width: 991.98px` → sediakan ruangnya di .pos-leftheader (tablet)
+     4. `max-width: 600px`    → versi ringkas + ruangnya (ponsel)
+
+   Sebelum 22 Sep 2026, blok 3 dan 4 ditulis SEBELUM aturan dasar. Akibatnya
+   terukur di browser: `img { width: 32px }` milik ponsel kalah dari
+   `img { width: 44px }` di aturan dasar (specificity sama, yang belakangan
+   menang), sehingga di 390px logonya tetap 44px padahal ruang yang disediakan
+   hanya 52px — blok merek berhenti PERSIS di tepi kendali pertama (terukur
+   60px vs 60px). Itu cacat urutan cascade, bukan pilihan desain; memindahkan
+   blok media ke bawah membereskannya.
    ------------------------------------------------------------------------- */
 .pos .pos-leftheader {
     position: relative;
-    // Adjust this once you see it on your phone -- it just needs to clear
-    // the width of .gy-header-brand below so the brand mark doesn't
-    // overlap the search bar / existing header buttons.
-    padding-left: 170px;
 }
 
 .gy-header-brand {
@@ -149,10 +498,73 @@
     z-index: 3;
 
     img {
-        width: 44px;
-        height: 44px;
+        width: 40px;
+        height: 40px;
         object-fit: contain;
         flex: none;
+        // logo.jpg adalah kotak merah PENUH (bukan lambang di atas latar
+        // transparan). Tanpa sudut membulat, tepinya terbaca sebagai kotak
+        // mentah yang menempel di header putih.
+        border-radius: var(--gy-radius-mark);
+    }
+}
+
+/* Di >=992px brand dibawa rel sidebar, jadi brand navbar dimatikan supaya tidak
+   ada dua logo.
+
+   PENTING — blok ini WAJIB berada SETELAH aturan dasar .gy-header-brand di atas.
+   Specificity-nya sama (.gy-header-brand), jadi yang belakangan menang; kalau blok
+   ini dinaikkan ke atas, aturan dasar `display: flex` menang kembali dan logo
+   muncul DUA KALI di layar lebar. Itu bukan dugaan: versi yang memindahkan aturan
+   ini ke section 20 (jauh di bawah, tapi juga setelah) tetap benar — yang
+   salah adalah menaruhnya SEBELUM aturan dasar, dan kesalahan itu benar-benar
+   tertangkap verifikasi browser 19 Sep 2026 (visibleBrandCount=2 di 1440px). */
+@media (min-width: 992px) {
+    .gy-header-brand {
+        display: none;
+    }
+}
+
+/* --- Ruang untuk brand absolut di 601-991px (tablet) ---
+   Angka 160px BUKAN tebakan: blok merek berakhir di x=160 (16px left + 40px
+   logo + 10px gap + ±94px wordmark), jadi 160px menyisakan tepat 8px sebelum
+   kendali pertama — yang sejak Fase E adalah TOMBOL DRAWER, bukan tombol Odoo.
+   Sebelumnya 150px, dan pada 834px blok merek terukur berakhir di x=164
+   sementara kendali pertama mulai di x=158 (tumpang 6px).
+   KALAU UKURAN LOGO / FONT WORDMARK / UKURAN TOMBOL DRAWER DIUBAH, ANGKA INI
+   WAJIB DIUKUR ULANG — harness melaporkan headerBrand.reservedPadLeft
+   berdampingan dengan headerBrand.rect dan headerBrand.firstControl supaya
+   tumpang atau celah kosong terlihat sebagai angka, bukan dari mata. */
+@media (max-width: 991.98px) {
+    .pos .pos-leftheader {
+        padding-left: 160px;
+    }
+}
+
+/* --- Ponsel (<=600px): versi paling ringkas ---
+   Di sini ruangnya benar-benar habis, jadi yang tinggal hanya LOGO (tanpa
+   wordmark & tagline) — dan sejak Fase E logo itu berbagi baris dengan TOMBOL
+   DRAWER. Angka terukurnya di 390px: .pos-leftheader hanya selebar 262px
+   (sisanya dipakai .pos-rightheader bawaan Odoo), sementara baris kendali Odoo
+   sendiri (3 tombol ikon 49px + tab order) sudah 229px. Wordmark 83px di sini
+   berarti tab order keluar dari layar dan harus digeser mendatar.
+
+   Nama perusahaan TIDAK hilang dari ponsel: ia ada di baris merek DI DALAM
+   drawer (240px, muat logo + wordmark + tagline + tombol tutup), yaitu satu
+   ketukan dari tombol yang sama. Ini disengaja dan berbeda dari layar >=601px,
+   yang masih memuat wordmark + tagline penuh. */
+@media (max-width: 600px) {
+    .pos .pos-leftheader {
+        padding-left: 46px;
+    }
+
+    .gy-header-brand img {
+        width: 30px;
+        height: 30px;
+    }
+
+    .gy-header-brand .gy-wordmark-block {
+        display: none;
     }
 }
 
@@ -168,12 +580,16 @@
     letter-spacing: 0.01em;
 }
 
+// Pola dua warna pos2: kata pertama merah (--gy-accent-logo), kata kedua gelap.
+// WAJIB sejalan dengan .gy-sidebar__word-1/-2 di section 20 — merek yang sama
+// di dua tempat; kalau salah satu diubah sendirian, brand jadi tidak konsisten
+// antara layar lebar (sidebar) dan layar sempit (navbar).
 .gy-word-1 {
-    color: var(--gy-text);
+    color: var(--gy-accent-logo);
 }
 
 .gy-word-2 {
-    color: var(--gy-red);
+    color: var(--gy-text);
     margin-left: 2px;
 }
 
@@ -181,64 +597,128 @@
     font-size: 0.5rem;
     font-weight: 700;
     letter-spacing: 0.03em;
-    color: var(--gy-red);
+    color: var(--gy-accent);
     margin-top: 1px;
     white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------------------
-   2. CATEGORY TABS (pill row: "Paket Recomended", "Paket Crispy", ...)
-   Reference: active category = filled solid red pill + white icon/text.
-   Inactive = white pill, thin gray border, colored icon (icon color itself
-   comes from pos_category_icon / pos_category_icon_image on the model —
-   this only styles the pill container, not the icon glyph color).
+   2. CHIP KATEGORI ("Paket Recomended", "Paket Crispy", ...)   (Fase 3)
+   Acuan bentuk: chip / chip aktif dari board "MENU / ORDER – MODE GRID"
+   (chip aktif 87×35px, sudut ±10px, ISIAN MERAH PENUH + label putih).
+
+   Status aktif memakai kelas MILIK KITA (`gy-category--active`, ditambahkan
+   category_selector_patch.xml dari `category.gyIsActive`). Sebelumnya status
+   ditebak dari `:not(.opacity-75)` milik Odoo — cara itu SALAH, terbukti dengan
+   pengukuran 19 Sep: keenam chip tampil aktif (§10d no.1).
    ------------------------------------------------------------------------- */
-.pos .categories,
+// Satu baris gulir. Daftar kategori memakai Bootstrap `d-grid`, jadi flex-wrap
+// tidak berpengaruh — itu sebabnya dulu chip menumpuk ke baris berikutnya;
+// satu baris dicapai lewat grid-auto-flow: column.
 .pos .category-list {
     background: transparent;
-    gap: 10px;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    grid-template-columns: none !important;
+    overflow-x: auto !important;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 4px !important;
+    gap: 10px !important;              // design: .menu__chips gap 10px
 }
 
 .pos .category-button {
-    background: var(--gy-surface) !important;
+    flex: 0 0 auto !important;
+    width: auto !important;
+    height: var(--gy-chip-h) !important;
+    min-height: unset !important;
+    padding: 0 var(--gy-chip-pad-x) !important;
+    gap: 6px !important;               // design: .chip gap 6px
     border: 1px solid var(--gy-border) !important;
-    border-radius: var(--gy-radius-pill) !important;
+    border-radius: var(--gy-radius-control) !important;
+    background: var(--gy-surface) !important;
     color: var(--gy-text) !important;
-    font-weight: 600;
-    box-shadow: var(--gy-shadow);
+    font-size: 14px !important;        // design: --fs-md
+    font-weight: 500 !important;       // design: --fw-medium
+    white-space: nowrap;
+    flex-direction: row !important;
+    // Board: chip TIDAK berbayang (bedanya dengan kartu produk yang memang punya
+    // bayangan) — chip hanya dipisahkan border 1px.
+    box-shadow: none !important;
     opacity: 1 !important;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 
-    &:not(.opacity-75) {
-        background: linear-gradient(135deg, var(--gy-red-2), var(--gy-red)) !important;
-        border-color: transparent !important;
+    &:hover {
+        background: var(--gy-surface-2) !important;
+    }
+
+    &:active {
+        background: var(--gy-surface-3) !important;
+    }
+
+    &:focus-visible {
+        outline: var(--gy-focus-ring-w) solid var(--gy-focus-ring);
+        outline-offset: var(--gy-focus-ring-offset);
+    }
+
+    // Ikon kategori (emoji/gambar dari pos_category_icon) — 14px seperti
+    // .chip svg di design. Diatur per-kategori di:
+    // Point of Sale > Konfigurasi > Kategori PoS > "Ikon Preset".
+    .gy-category-emoji {
+        font-size: var(--gy-chip-icon);
+        line-height: 1;
+        flex: none;
+    }
+
+    .gy-category-emoji-img {
+        width: var(--gy-chip-icon);
+        height: var(--gy-chip-icon);
+        object-fit: contain;
+        flex: none;
+    }
+
+    // ---- AKTIF: isian merah penuh, label & ikon putih ----
+    // `filter: brightness(0) invert(1)` di sini BUKAN sisa tema lama: di atas
+    // isian merah penuh, ikon berwarna apa pun jadi tidak kontras, dan board
+    // memang menggambar ikon putih di chip aktif. Filter ini dulu pernah ada di
+    // luar kelas aktif (saat aksen masih hijau muda) — di situ ia merusak, di
+    // dalam kelas ini ia justru yang benar.
+    &.gy-category--active {
+        background: var(--gy-accent) !important;
+        border-color: var(--gy-accent) !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 12px rgba(232, 67, 47, 0.28);
+        font-weight: 600 !important;    // design: .chip.is-active → --fw-semibold
+
+        &:hover {
+            background: var(--gy-accent-2) !important;
+            border-color: var(--gy-accent-2) !important;
+        }
 
         i,
         .fa,
+        svg,
         img {
             filter: brightness(0) invert(1);
         }
-    }
-
-    &.opacity-75 {
-        background: var(--gy-surface) !important;
-        border-color: var(--gy-border) !important;
-        color: var(--gy-text) !important;
-        box-shadow: var(--gy-shadow);
     }
 }
 
 /* ---------------------------------------------------------------------------
    3. PRODUCT GRID + PRODUCT CARD
    ------------------------------------------------------------------------- */
-.pos .product-list-container,
+// Panel PESANAN. Di Odoo 19 `.leftpane` berisi OrderSummary; tema ini membalik
+// posisinya ke KANAN lewat `order` (lihat Section 18), jadi jangan tertipu
+// namanya. Latarnya permukaan putih — BUKAN --gy-bg, karena --gy-bg sekarang
+// gradien mint untuk latar HALAMAN; kalau dipakai di sini gradiennya ikut masuk.
 .pos .product-screen .leftpane {
-    background: var(--gy-bg);
+    background: var(--gy-surface);
 }
 
-.pos .product-list {
+// PENTING: .category-list JUGA ber-class .product-list (CategorySelector memakai
+// class="product-list category-list"), jadi tiap aturan grid untuk daftar produk
+// wajib mengecualikan daftar kategori — kalau tidak, tab kategori ikut dipaksa
+// jadi grid 4 kolom dan berhenti jadi satu baris gulir.
+.pos .product-list:not(.category-list) {
     gap: 20px;
 }
 
@@ -247,7 +727,11 @@
     position: relative;
     background: var(--gy-surface);
     border: 1px solid var(--gy-border);
-    border-radius: var(--gy-radius-lg);
+    // !important WAJIB di sini, bukan kemalasan: template Odoo memasang utility
+    // Bootstrap `rounded-3` pada <article>, dan utility-nya menang atas aturan
+    // ini — terukur 19 Sep: kartu dirender radius 6px walaupun SCSS menulis 20px
+    // (§10d no.2). Nilai desainnya sendiri 12px.
+    border-radius: var(--gy-radius-card) !important;
     overflow: hidden;
     box-shadow: var(--gy-shadow);
     transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
@@ -258,34 +742,36 @@
         transform: translateY(-2px);
     }
 
+    // Foto menempel tepi kartu (bukan inset 8px seperti di board — lihat catatan
+    // di section 11), jadi sudut atasnya mengikuti sudut kartu.
     .product-img,
-    .product-picture,
     img {
-        border-radius: var(--gy-radius-lg) var(--gy-radius-lg) 0 0;
+        border-radius: var(--gy-radius-card) var(--gy-radius-card) 0 0;
         object-fit: cover;
     }
 
     .product-name {
         color: var(--gy-text);
         font-weight: 600;
-        font-size: 0.92rem;
+        font-size: 14px;               // design: .menu__title → --fs-md
+        line-height: 1.35;
     }
 
+    // Harga di board berwarna GELAP, bukan merah — merah hanya untuk aksi yang
+    // menonjol (chip aktif, pill, CTA). Sebelum F3 ini merah karena pewarisan
+    // token aksen lama.
     .product-price {
-        color: var(--gy-red);
-        font-weight: 700;
+        color: var(--gy-text);
+        font-weight: 700;              // design: .menu__price → --fw-bold
+        font-size: 14px;               // design: --fs-md
     }
 }
 
-// Round "+" add button that sits bottom-right of each card in the reference —
-// outline red circle, not filled, per the light-theme screenshot.
-.pos article.product .product-content::after,
-.pos .product-add-button {
-    background: var(--gy-surface);
-    border: 1.5px solid var(--gy-red);
-    color: var(--gy-red);
-    border-radius: var(--gy-radius-pill);
-}
+// CATATAN: tombol "+" bulat yang dulu ditulis di sini sudah DIHAPUS. Di Odoo 19
+// tidak ada elemen .product-add-button (seluruh kartu = tombol, lihat
+// product_card.xml: <article role="button" t-on-click="props.onClick">) dan
+// .product-content::after tanpa properti `content` tidak pernah dirender.
+// Jadi aturan itu hanya jadi kode mati — bukan tombol yang hilang.
 
 /* ---------------------------------------------------------------------------
    4. PRODUCT BADGES (BEST SELLER / NEW / PEDAS)
@@ -315,29 +801,37 @@
         left: 8px;
     }
 
-    &.gy-badge--right {
-        right: 8px;
-    }
-
     &.gy-badge-best-seller {
         background: linear-gradient(135deg, var(--gy-gold-2), var(--gy-gold));
         color: #241a02;
     }
 
     &.gy-badge-new {
-        background: var(--gy-green);
+        background: var(--gy-accent);
         color: #ffffff;
     }
 
+    // Bukan --gy-accent: kalau memakai aksen hijau yang sama, badge PEDAS jadi
+    // KEMBAR dengan badge BARU di atas (keduanya hijau solid). Dipakai
+    // --gy-danger supaya tetap terbedakan — ini satu-satunya badge "hangat"
+    // yang tersisa, dan tetap sesuai palet design.
     &.gy-badge-pedas {
-        background: var(--gy-red);
+        background: var(--gy-danger);
         color: #ffffff;
     }
 }
 
 // Spice level label already rendered on the orderline by orderline_patch.xml.
 .pos .spice-level-badge {
-    color: var(--gy-red) !important;
+    color: var(--gy-accent) !important;
+    /*
+        WAJIB satu baris. Badge duduk sebagai flex-item di dalam `.line-details`
+        (justify-content: space-between), jadi ia ikut MENYUSUT dan teksnya
+        membungkus jadi dua baris ("Level" / "1"). Terukur: baris order produk
+        pedas jadi 88px dan level 5 sampai 90px, padahal baris biasa 73px.
+        Dengan nowrap, `min-width: auto` flex membuat badge tidak menyusut lagi.
+    */
+    white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------------------
@@ -350,7 +844,11 @@
     border-left: 1px solid var(--gy-border);
 }
 
-.pos .order .orderline,
+// CATATAN FASE 4: untuk panel kasir, kotak-kotak baris ini (border + sudut +
+// bayangan) DIGANTIKAN oleh gaya baris pos2 di SECTION 22 — di board baris order
+// adalah baris polos tanpa kotak, hanya dipisah jarak. Blok ini SENGAJA tetap
+// ada karena `.orderline` juga dirender di luar panel kasir (mis. layar struk),
+// dan di sana kotak berbingkai itu masih dipakai.
 .pos .orderline {
     background: var(--gy-surface);
     border: 1px solid var(--gy-border);
@@ -360,38 +858,40 @@
     box-shadow: var(--gy-shadow);
 
     &.selected {
-        border-color: var(--gy-red);
+        border-color: var(--gy-accent);
     }
 
     .price,
     .product-price {
-        color: var(--gy-red);
+        color: var(--gy-accent);
         font-weight: 700;
     }
 }
 
-.pos .order-summary,
-.pos .payment-status-summary,
-.pos .summary {
-    .total,
-    .value.total {
-        color: var(--gy-red);
-        font-weight: 800;
-        font-size: 1.35rem;
+// Hanya .order-summary yang masih ada di Odoo 19 (order_display.xml:
+// .order-summary > .tax-info.subentry + .total). .payment-status-summary,
+// .summary, dan .value adalah nama Odoo <=16 yang sudah tidak dipakai.
+// Fase 4: angkanya disetel ke board — Total 20px/700 merah (dulu 21,6px/800),
+// baris pajak/subtotal 14px redup. Tata letak panelnya sendiri ada di section 22.
+.pos .order-summary {
+    .total {
+        color: var(--gy-accent);
+        font-weight: 700;
+        font-size: 20px;               // board: angka Total 20px
     }
 
-    .subentry .value,
-    .line .value {
+    .subentry,
+    .tax-info {
         color: var(--gy-text-muted);
+        font-size: 14px;               // design: .order__row → --fs-md
     }
 }
 
 /* ---------------------------------------------------------------------------
    5b. MEMBER CARD (avatar + name + "Verified" badge + poin loyalti)
-   NOTE: no XML patch renders this yet (Tahap 6, not started) — these rules
-   are forward-declared so the markup can drop straight in later. Wire to
-   `pos_wa_number` / `pos_wa_verified` / `pos_loyalty_points` from
-   res_partner.py when that template is built.
+   Sudah AKTIF: template `app/screens/product_screen/member_card.xml`
+   (komponen geprekyukss_pos.MemberCard) disisipkan ProductScreen sebelum
+   OrderSummary, memakai pos_wa_verified / pos_loyalty_points dari res_partner.py.
    ------------------------------------------------------------------------- */
 .gy-member-card {
     display: flex;
@@ -408,7 +908,7 @@
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    background: var(--gy-red);
+    background: var(--gy-accent);
     color: #ffffff;
     font-weight: 700;
     display: flex;
@@ -418,7 +918,7 @@
 }
 
 .gy-member-verified {
-    color: var(--gy-green);
+    color: var(--gy-accent);
     font-weight: 600;
     font-size: 0.72rem;
     display: inline-flex;
@@ -428,7 +928,7 @@
 
 .gy-member-points {
     margin-left: auto;
-    color: var(--gy-red);
+    color: var(--gy-accent);
     font-weight: 700;
 }
 
@@ -443,28 +943,35 @@
     color: var(--gy-text);
 }
 
-// Primary pay / checkout button — full-width red-orange gradient bar with
-// white text in the reference, same as before, just re-tuned to the new
-// accent hues.
+// Tombol bayar (dan padanannya di layar lain, mis. tombol "Refund" di layar
+// tiket yang memakai ActionpadWidget + class .pay-order-button yang sama).
+// SATU-SATUNYA tempat warna tombol bayar ditentukan — dulu ada blok kedua di
+// section 15 (dengan `!important`) yang menang di cascade dan membuat warna
+// tombol ditentukan di dua tempat berbeda. Blok itu sudah DIHAPUS (Fase 4).
+//
+// Fase 4: gradien → isian rata `--gy-accent` (board menggambar CTA sebagai
+// isian merah rata, bukan gradien), sudut 10px, hover pindah ke --gy-accent-2.
+// Ukuran & susunan khusus panel kasir ada di section 22.
 .pos .actionpad .button.pay-order-button,
 .pos .actionpad .pay-order-button,
-.pos .payment-button,
 .pos .button.next {
-    background: linear-gradient(135deg, var(--gy-red-2), var(--gy-red));
+    background: var(--gy-accent);
     border: none;
-    border-radius: var(--gy-radius-md);
+    border-radius: var(--gy-radius-control);
     color: #fff;
     font-weight: 700;
-    letter-spacing: 0.02em;
-    box-shadow: 0 6px 16px rgba(232, 67, 47, 0.3);
+    letter-spacing: 0.01em;
+    box-shadow: var(--gy-shadow-pill);
 
     &:hover {
-        filter: brightness(1.05);
+        background: var(--gy-accent-2);
     }
 }
 
-.pos .numpad button,
-.pos .numpad .number-char {
+// Kelas tombol numpad di Odoo 19 = .numpad-button (bukan .number-char).
+// Di layar kasir numpad memang dimatikan (lihat product_screen_layout_patch.xml),
+// aturan ini berlaku di layar lain yang masih memakai numpad.
+.pos .numpad .numpad-button {
     background: var(--gy-surface-2);
     border: 1px solid var(--gy-border);
     color: var(--gy-text);
@@ -474,21 +981,19 @@
 /* ---------------------------------------------------------------------------
    7. STATUS BAR (bottom footer: version, online dot, printer, clock)
    ------------------------------------------------------------------------- */
-.pos .pos-topheader ~ .status-buttons,
-.pos footer,
-.pos .order-management-status,
-.pos .pos-status-bar {
-    background: var(--gy-surface);
-    border-top: 1px solid var(--gy-border);
-    color: var(--gy-text-faint);
+// Status printer/koneksi di Odoo 19 tinggal di header kanan:
+// .status-buttons > .oe_status, dengan penanda .js_connected. Status bar bawah
+// (.pos-status-bar), .order-management-status, .status-dot, dan .oe_status_home
+// sudah tidak ada lagi di DOM POS Odoo 19.
+.pos .status-buttons .oe_status {
+    background: var(--gy-surface-2);
+    border: 1px solid var(--gy-border);
+    color: var(--gy-text-muted);
     font-size: 0.75rem;
 }
 
-.pos .status-dot,
-.pos .oe_status.oe_grey.oe_status_home,
-.pos .js_connected {
-    background: var(--gy-green);
-    border-radius: 50%;
+.pos .status-buttons .js_connected {
+    color: var(--gy-accent) !important;
 }
 
 /* ---------------------------------------------------------------------------
@@ -511,25 +1016,54 @@
 
 .pos .pos-leftheader .btn,
 .pos .pos-rightheader .btn {
-    background: var(--gy-surface-2);
+    // pos2: tombol header = permukaan PUTIH berbingkai tipis (bukan abu).
+    background: var(--gy-surface);
     border: 1px solid var(--gy-border);
+    border-radius: var(--gy-radius-control);
     color: var(--gy-text) !important;
 
     &.active {
-        background: linear-gradient(135deg, var(--gy-red-2), var(--gy-red));
+        // Isian merah RATA, bukan gradien: pos2 tidak memakai gradien sama sekali
+        // (gradien aksen adalah sisa tema v1/v3).
+        background: var(--gy-accent);
         border-color: transparent;
         color: #ffffff !important;
     }
 }
 
-.pos .pos-rightheader input {
-    background: var(--gy-surface-2) !important;
+/* Search bar (pos2: `.search` — kotak putih 300×38, sudut 10px, border tipis,
+   ikon kaca pembesar di dalamnya). Kotak yang TERLIHAT adalah div
+   `.input-container` bawaan komponen `point_of_sale.input`; elemen `input` di
+   dalamnya harus transparan & tanpa border supaya tidak ada kotak kedua.
+
+   Sudut: dulu pill 999px, sekarang `--gy-radius-control` (10px) mengikuti
+   design. Lebar: Bootstrap memberi kelas `w-100 w-xl-50` (width + !important),
+   jadi lebarnya diambil alih lewat flex + width:auto di >=992px saja — di
+   layar kecil komponen ini berubah jadi ikon pencarian (perilaku Odoo) dan
+   tidak boleh dipaksa 300px. */
+.pos .pos-rightheader .input-container {
+    background: var(--gy-surface) !important;
     border: 1px solid var(--gy-border) !important;
-    border-radius: var(--gy-radius-md);
+    border-radius: var(--gy-radius-control) !important;
+    height: var(--gy-search-h);
+    padding-left: 12px;
+    padding-right: 12px;
+}
+
+@media (min-width: 992px) {
+    .pos .pos-rightheader .input-container {
+        width: auto !important;
+        flex: 0 1 var(--gy-search-w);
+    }
+}
+
+.pos .pos-rightheader .input-container .o_input {
+    background: transparent !important;
+    border: 0 !important;
     color: var(--gy-text) !important;
 
     &::placeholder {
-        color: var(--gy-text-faint);
+        color: var(--gy-text-muted);
     }
 }
 
@@ -555,7 +1089,7 @@
 .pos .orderline .product-price,
 .pos .order .orderline .price,
 .pos .order .orderline .product-price {
-    color: var(--gy-red) !important;
+    color: var(--gy-accent) !important;
 }
 
 /* ---------------------------------------------------------------------------
@@ -568,22 +1102,38 @@
    fix utama.
    ------------------------------------------------------------------------- */
 .pos article.product .product-img,
-.pos article.product .product-picture,
 .pos article.product img,
 .pos .product-list .product img {
     display: block !important;
     width: 100% !important;
     height: 100% !important;
-    object-fit: contain !important;
+    // `cover`, bukan `contain`: di board foto memenuhi kotaknya (rasio kotak
+    // sudah 137/99), jadi tidak perlu ruang kosong di dalam bingkai.
+    object-fit: cover !important;
 }
 
-// Container gambar (pakai Bootstrap "ratio ratio-4x3" untuk aspect-ratio
-// otomatis) perlu overflow:hidden tegas — tanpa ini, kalau img di dalamnya
-// meluber sedikit saja dari box ratio, luberan itu bisa "makan" ke area
-// padding konten di bawahnya dan bikin teks kelihatan nempel ke gambar.
+// Container gambar (pakai Bootstrap "ratio ratio-4x3") perlu overflow:hidden
+// tegas — tanpa ini, kalau img di dalamnya meluber sedikit saja dari box ratio,
+// luberan itu bisa "makan" ke area padding konten di bawahnya dan bikin teks
+// kelihatan nempel ke gambar.
+
+// RASIO FOTO (Fase 3): 1/1 → 137/99 sesuai board. Tingginya TIDAK diambil dari
+// `aspect-ratio`: markup Odoo memakai Bootstrap `.ratio`, yang menaruh tinggi
+// kotak di `padding-top: var(--aspect-ratio)` pada pseudo ::before. Jadi angka
+// rasio cukup ditulis SEKALI di variabel itu — memasang `aspect-ratio` juga
+// berarti dua mekanisme tinggi yang bisa saling bertentangan.
+//
+// NAMANYA `--aspect-ratio`, BUKAN `--bs-aspect-ratio`. Bootstrap baku memakai
+// awalan `--bs-`, tapi build Odoo mengosongkan awalan itu: di bundel CSS POS
+// yang benar-benar dikirim ke browser hanya ada `.ratio::before{padding-top:
+// var(--aspect-ratio)}` dan `.ratio-4x3{--aspect-ratio: calc(3 / 4 * 100%)}`
+// (`grep` pada point_of_sale.assets_prod.min.css; `--bs-aspect-ratio` TIDAK
+// muncul sama sekali). Terukur sebelum ini: variabel versi `--bs-` diabaikan
+// diam-diam — padding-top ::before tetap 0px dan foto mengambil rasio
+// intrinsiknya sendiri (4:3), bukan 137:99.
 .pos article.product .product-img {
     overflow: hidden !important;
-    aspect-ratio: 1 / 1 !important;
+    --aspect-ratio: var(--gy-card-ratio);
     height: auto !important;
     background: #ffffff;
 }
@@ -605,7 +1155,7 @@
 // (dikonsolidasi ke rule .product-name di bagian bawah file)
 
 .pos article.product .product-price {
-    font-size: 0.95rem !important;
+    font-size: 14px !important;        // design: .menu__price → --fs-md
     line-height: 1.2;
     margin-top: auto !important;
     padding-top: 4px;
@@ -620,78 +1170,129 @@
 // (height img dihapus, sekarang mengikuti aspect-ratio container ratio-4x3 Bootstrap)
 
 /* ---------------------------------------------------------------------------
-   14. FIX — kategori kepanjangan ke bawah (2 baris) & makan banyak ruang saat
-   landscape. Bikin jadi 1 baris horizontal-scroll, padding & font diperkecil.
+   14. (PINDAH) — dulu di sini ada perbaikan "kategori jadi satu baris gulir"
+   beserta ukuran chip-nya. Keduanya sudah menjadi bagian dari gaya pos2 di
+   SECTION 2 (chip: tinggi/radius/warna, dan `.category-list` satu baris), jadi
+   blok ini dihapus — bukan dipindah sebagian. Nilai lamanya berbenturan dengan
+   desain: gap 6px (sekarang 10px), tinggi `auto`, font 12px, padding 6/12px.
    ------------------------------------------------------------------------- */
-.pos .categories,
-.pos .category-list {
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    padding: 6px 4px !important;
-    gap: 6px !important;
-}
-
-.pos .category-button {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    height: auto !important;
-    min-height: unset !important;
-    padding: 6px 12px !important;
-    font-size: 0.75rem !important;
-    white-space: nowrap;
-    flex-direction: row !important;
-    gap: 4px !important;
-
-    i, .fa, img {
-        font-size: 0.85rem;
-        width: 14px;
-        height: 14px;
-    }
-}
 
 // ==== Section 15: Panel PESANAN — header, tombol Bersihkan, tombol Bayar ====
+// Token milik tema (--gy-*). Odoo 19 TIDAK mendefinisikan --text, --primary,
+// maupun --text-muted sebagai CSS variable, jadi var() tanpa fallback di sini
+// dulu jadi deklarasi tidak sah (warna title/hover tidak pernah berubah).
+// Judul panel = "Order #<kode>" (Fase 4). Angka 17px/700 dari design
+// (`.order__title` → --fs-lg), sebelumnya 1rem/tebal dari kelas Bootstrap.
 .gy-order-title {
-    font-size: 1rem;
-    color: var(--text);
-}
-.gy-clear-btn {
-    background: transparent;
-    border: none;
-    color: #999;
-    &:hover { color: var(--primary); }
-    &:disabled { opacity: 0.4; }
-}
-.gy-add-note {
-    background: #fff;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-    color: var(--text-muted, #666);
-    cursor: pointer;
-}
-.actionpad .pay-order-button {
-    background: linear-gradient(90deg, #e8432f, #ff5a3c) !important;
-    border: none !important;
-    border-radius: 12px !important;
-    width: 100% !important;
-    font-weight: bold;
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gy-text);
+    // `flex: 0 0 auto` WAJIB: tanpa itu judul ikut menyusut demi memberi ruang
+    // pill. Terukur di 1440px: judul "Order #91001" tinggal 43px sehingga teksnya
+    // terpotong ("Orde…") — sementara pill "Makan di Tempat" (preset nyata di DB
+    // ini, 119px) tetap utuh. Dengan flex none, pill yang turun ke baris kedua
+    // (header dibuat wrap di section 22) dan judul selalu terbaca utuh.
+    flex: 0 0 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
+// Pill status order ("Dine In"/"Takeout"/"Delivery") — hanya dirender kalau
+// order punya preset (product_screen_layout_patch.xml). Sudut 8px, diisi aksen
+// penuh seperti `.order__mode` di design.
+.gy-order-mode {
+    // Boleh menyusut (dan dipotong dengan elipsis) — KEBALIKAN dari judul:
+    // nama preset bisa panjang, dan status order lebih baik terpotong daripada
+    // mendorong judul keluar dari panel.
+    flex: 0 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    // 11px/4-8 (bukan 12px/5-10) sejak panel dilebarkan ke 300px (entri v7):
+    // inilah yang membuat judul + pill + tombol bersihkan muat SATU baris
+    // (±249px dari 272px yang tersedia).
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--gy-accent);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+// Tombol Bersihkan: ikon redup saja (board menggambar satu tombol kecil di kanan
+// header). Teksnya dilepas supaya judul + pill tetap muat sebaris.
+.gy-clear-btn {
+    flex: none;
+    background: transparent;
+    border: none;
+    color: var(--gy-text-faint);
+    padding: 2px 4px;
+    &:hover { color: var(--gy-accent); }
+    &:disabled { opacity: 0.4; }
+}
+
+// Baris "Tambah Catatan" (disisipkan product_screen_layout_patch.xml): pita
+// bergaris atas-bawah. `px-2` bawaan membuat teksnya mulai 8px dari tepi
+// sementara elemen lain 14px.
+.gy-add-note {
+    background: var(--gy-surface);
+    border-top: 1px solid var(--gy-border);
+    border-bottom: 1px solid var(--gy-border);
+    color: var(--gy-text-muted);
+    cursor: pointer;
+}
+
+.pos .product-screen .gy-add-note {
+    padding-left: var(--gy-order-pad-x) !important;
+    padding-right: var(--gy-order-pad-x) !important;
+}
+// CATATAN: blok tombol BAYAR yang kedua dulu ada di sini (duplikat Section 6
+// dengan `!important`). Sudah DIHAPUS di Fase 4; warna & sudut tombol bayar
+// sekarang hanya ditentukan di Section 6, lebarnya di Section 22.
+
 // ==== Section 16: qty stepper & tombol hapus per cart item ====
+// Fase 4: dibuat padat karena barisnya hanya selebar panel, dan tombol hapus jadi
+// lingkaran merah 20px sesuai board (dulu teks/ikon oranye --gy-danger tanpa
+// ukuran tetap). Di panel 300px (Fase 4b) tombolnya tetap padat — yang berubah
+// hanya tempatnya: stepper kini berbagi baris dengan nama di kolom kiri.
 .gy-line-controls {
+    gap: 2px;
+
     .gy-qty-btn {
-        padding: 0.1rem 0.5rem;
+        padding: 0 5px;
+        font-size: 12px;
+        line-height: 1.6;
+        border-radius: var(--gy-radius-sm);
     }
     input.quantity {
-        max-width: 2.5rem;
+        max-width: 2rem;
+        text-align: center;
     }
 }
 .gy-delete-line-btn {
-    color: #c0392b;
+    width: var(--gy-remove-size);
+    height: var(--gy-remove-size);
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--gy-accent);
     background: transparent;
     border: none;
-    &:hover { color: #e74c3c; }
+    flex: none;
+
+    &:hover {
+        color: var(--gy-accent);
+        background: var(--gy-accent-soft);
+    }
+    &:active {
+        background: var(--gy-accent-soft-pressed);
+    }
 }
 
 /* ---------------------------------------------------------------------------
@@ -714,13 +1315,15 @@
 // ===== SECTION 19: TOMBOL "BARU" (action pad, mode restoran) =====
 // Gaya abu-abu/outline, ukuran match tombol BAYAR (btn-lg w-50)
 .pos .actionpad .gy-btn-new {
-    background: #fff;
-    border: 2px solid var(--gy-border, #d1d5db);
-    color: #374151;
+    background: var(--gy-surface);
+    // Fallback #d1d5db dibuang: --gy-border selalu terdefinisi, jadi nilai
+    // fallback itu tidak pernah dipakai — kode mati.
+    border: 2px solid var(--gy-border);
+    color: var(--gy-text-muted);
     font-weight: 600;
 }
 .pos .actionpad .gy-btn-new:hover {
-    background: #f3f4f6;
+    background: var(--gy-surface-3);
 }
 
 // ==== Fixed-ratio 16:10 scaled & centered layout (letterbox) ====
@@ -730,10 +1333,22 @@ $design-height: 800px;
 html {
     overflow: hidden;
     height: 100%;
-    background: #111827;
+    background: var(--gy-bg);
 }
 
-body.pos {
+// Letterbox 16:10 kini OPT-IN: fit_width_scale.js menambahkan .pos-letterbox ke
+// <body> hanya saat mode non-fluid (FULLSCREEN_ALL = false). Sebelumnya default
+// CSS = letterbox, sehingga sebelum JS jalan layar sempat tampil sebagai kotak
+// 1280x800 di atas latar gelap (kini #121b21, dulu #0b1f14 lalu #111827) — kilatan layout
+// yang tidak perlu.
+// Mode fluid (default) sekarang murni CSS dan tidak menunggu JS.
+html:has(body.pos-letterbox) {
+    // Latar huruf pinggir mode letterbox: dulu hijau tua #0b1f14 (sisa tema
+    // hijau). Sekarang warna gelap netral yang sama dengan teks.
+    background: #121b21;
+}
+
+body.pos.pos-letterbox {
     width: $design-width;
     height: $design-height;
     position: absolute;
@@ -747,7 +1362,7 @@ body.pos {
 // "html body.modal-open { position: fixed; }" yang specificity-nya lebih
 // tinggi dari body.pos biasa, jadi override absolute+top+left+transform kita
 // dan bikin box lompat ke pojok. Rule ini menang balik, spesifik + !important.
-html body.pos.modal-open {
+html body.pos.pos-letterbox.modal-open {
     position: absolute !important;
     top: 50% !important;
     left: 50% !important;
@@ -758,13 +1373,13 @@ html body.pos.modal-open {
 }
 
 // Paksa root div Chrome (class dvh-100) ikut tinggi design, bukan tinggi layar asli
-body.pos > .pos {
+body.pos.pos-letterbox > .pos {
     height: $design-height !important;
     max-height: $design-height !important;
 }
 
 // ==== Ikutkan popup/dialog container ke scaling & centering yang sama ====
-body.pos > .o-main-components-container {
+body.pos.pos-letterbox > .o-main-components-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -781,34 +1396,87 @@ body.pos > .o-main-components-container {
 
 // Override grid produk jadi fixed 4 kolom (bukan auto-fill responsif bawaan Odoo)
 // supaya card lebih besar & renggang, sesuai reference desain baru.
-.product-list {
-    grid-template-columns: repeat(4, 1fr) !important;
+// :not(.category-list) WAJIB — tanpa itu tab kategori (yang juga ber-class
+// .product-list) ikut jadi grid 4 kolom.
+//
+// minmax(0, 1fr), BUKAN 1fr: jalur `1fr` punya minimum `auto` = min-content,
+// sehingga keempat kolom menolak menyusut di bawah lebar kartunya. Akibatnya
+// grid memaksa panel kanan selebar ±710px; di jendela 992–1349px itu membuat
+// panel PESANAN (lebar tetap 400–450px dari Odoo) terdorong keluar layar.
+// Terukur sebelum perbaikan (Fase 2, verify 19 Sep): jendela 1024px → panel
+// kanan 710 + panel pesanan 400 = 1110px di dalam konten 784px, `.pos-content`
+// jadi bisa di-scroll horizontal 326px. Sudah meluber 86px SEBELUM overhaul
+// (tanpa sidebar) — jadi ini cacat lama, hanya diperberat sidebar 240px.
+// Dengan minmax(0, 1fr) grid boleh menyusut; tampilan di 1440px tidak berubah
+// (kolom tetap 171,25px karena ruangnya memang cukup).
+.product-list:not(.category-list) {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 16px !important;
 }
 
-
-/* 15. CATEGORY ICON (EMOJI) - Geprekyukss
-   Diatur per-kategori di: Point of Sale > Konfigurasi > Kategori PoS > "Ikon Preset" */
-.pos .category-button {
-    .gy-category-emoji {
-        font-size: 1rem;
-        line-height: 1;
-        margin-right: 0.25rem;
-    }
-    .gy-category-emoji-img {
-        width: 18px;
-        height: 18px;
-        object-fit: contain;
-        margin-right: 0.25rem;
-        flex-shrink: 0;
+// Layar lebar: kolom DITAMBAH supaya kartu tidak ikut membesar mengikuti layar.
+// Tanpa ini, 4 kolom `1fr` menelan seluruh sisa lebar: di 1440px kartunya
+// TERUKUR 215px (design: 171px) sementara panel Order tetap 300px, sehingga
+// yang membesar adalah MENU-nya, bukan panel pesanan.
+//
+// Angka breakpoint dipilih dengan panel 440px (section 22) supaya kartu tetap
+// mendekati ukuran design 171px — terukur: 1600 -> 5 kolom (173px),
+// 1920 -> 6 kolom (194px). Ini TIDAK melebarkan panel Order — lebar panel
+// diatur token `--gy-order-w`. Dua-duanya dibutuhkan: kolom menjaga ukuran
+// KARTU, token menjaga ukuran PANEL.
+@media (min-width: 1600px) {
+    .product-list:not(.category-list) {
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     }
 }
 
+@media (min-width: 1800px) {
+    .product-list:not(.category-list) {
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    }
+}
+
+// 992-1149px: 3 KOLOM (bukan 4). Di rentang ini 4 kolom menyisakan kartu cuma
+// 120px di 1024px — TERUKUR dengan harness, dan itu di bawah ukuran design
+// 171px (bahkan di bawah kartu di ponsel, 178px). Sebabnya lebar konten sudah
+// dimakan sidebar 200px + panel Order 264px: 1024 - 200 - 264 - 32 = 528px
+// untuk EMPAT kolom. Dengan 3 kolom kartunya 155px (992px) .. 207px (1149px).
+//
+// KENAPA 1150px (bukan 1200px): setiap kali satu kolom DITAMBAH, kartu melompat
+// turun sebesar (lebar_pane + gap) / (jumlah_kolom_lama x jumlah_kolom_baru)
+// = (avail + 16) / 12 untuk peralihan 3 -> 4. Jadi lompatannya paling kecil
+// kalau peralihannya dibuat SEDINI mungkin, dan 1150px adalah titik paling awal
+// yang masih menyisakan kartu 4 kolom >= 150px (152px tepat di 1150px;
+// di 1149px kartu 3 kolom = 207px). Dengan batas 1200px lompatannya 60px
+// (224 -> 164px); dengan 1150px jadi 55px (207 -> 152px).
+//
+// Blok ini hanya menyentuh >=992px; di bawah itu sidebar sudah hilang jadi grid
+// memang selebar layar (aturan 3/2 kolom di blok fluid), dan di >=1150px aturan
+// dasar 4 kolom di atas yang berlaku.
+@media (min-width: 992px) and (max-width: 1149.98px) {
+    .product-list:not(.category-list) {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    }
+}
+
+// Item flex juga default `min-width: auto`. Tanpa ini panel kanan menolak
+// menyusut walau lebar grid-nya sudah boleh menyusut.
+.pos .product-screen > .rightpane {
+    min-width: 0;
+}
+
+
+/* ---------------------------------------------------------------------------
+   15. (PINDAH) — ukuran ikon kategori (emoji/gambar) sekarang ikut aturan chip
+   di SECTION 2 (14px, sesuai .chip svg di design). Blok terpisah di sini sudah
+   dihapus supaya ukuran ikon hanya ditulis di satu tempat.
+   ------------------------------------------------------------------------- */
+
 // ==== RESPONSIVE: laptop / tablet / mobile ====
-// Rule letterbox 16:10 di atas tetap berlaku untuk laptop/desktop & tablet
-// landscape. Untuk mobile & tablet portrait, fit_width_scale.js menambahkan
-// class "pos-fluid" ke <body> dan rule di bawah ini me-reset layout agar
-// mengikuti layar asli (fluid, tanpa letterbox).
+// Mode default sekarang FLUID (FULLSCREEN_ALL = true di fit_width_scale.js):
+// JS menempelkan class "pos-fluid" ke <body>. Karena default CSS juga sudah
+// fluid, tidak ada lagi kilatan letterbox sebelum JS jalan; blok .pos-letterbox
+// di atas hanya dipakai bila mode letterbox dihidupkan lagi.
 html body.pos.pos-fluid {
     position: absolute !important;
     top: 0 !important;
@@ -823,10 +1491,8 @@ body.pos.pos-fluid > .pos {
     max-height: none !important;
 }
 
-body.pos.pos-fluid > .o-main-components-container {
-    width: 100vw;
-    height: 100dvh;
-}
+// (container dialog TIDAK perlu di-set ukuran di mode fluid: tanpa transform
+// pada <body>, dialog Bootstrap sudah position:fixed terhadap viewport)
 
 // Fallback kalau JS belum sempat jalan tapi viewport sudah kecil/portrait,
 // supaya tidak sempat terlihat letterbox 1280x800 di layar mobile.
@@ -845,20 +1511,1178 @@ body.pos.pos-fluid > .o-main-components-container {
         max-height: none !important;
     }
 
-    body.pos > .o-main-components-container {
-        width: 100vw;
-        height: 100dvh;
-    }
-
     // Grid produk: 3 kolom di tablet portrait, 2 kolom di layar sempit.
     // Kolom tetap 4 di laptop/desktop & landscape.
-    .product-list {
-        grid-template-columns: repeat(3, 1fr) !important;
+    .product-list:not(.category-list) {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     }
 }
 
 @media (max-width: 480px) {
-    .product-list {
-        grid-template-columns: repeat(2, 1fr) !important;
+    .product-list:not(.category-list) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+/* ===========================================================================
+   20. KERANGKA 3 KOLOM + REL SIDEBAR  (Fase 2 "Overhaul POS Hijau")
+   ===========================================================================
+   Sebelumnya layar POS hanya punya 2 baris: Navbar di atas, konten di bawah.
+   Sekarang jadi: rel sidebar 240px setinggi layar + kolom konten di sebelahnya.
+
+   Kenapa GRID, bukan membungkus ulang DOM:
+   `point_of_sale.Chrome` merender
+       <div class="pos dvh-100 d-flex flex-column">
+           <Navbar />
+           <div class="pos-content …">…</div>
+       </div>
+   `.pos` TEPAT punya 2 anak; `navbar/sidebar_patch.xml` menyisipkan <aside>
+   sebagai anak pertama. Jadi cukup alihkan `.pos` dari flex-column ke grid dan
+   taruh tiap anak di selnya — tanpa wrapper baru, yang berarti tanpa perlu
+   menyentuh template Navbar maupun konten.
+
+   Penyeleksi `body.pos > .pos` (bukan `.pos` saja): kelas `.pos` juga dipakai
+   pada elemen LAIN sebagai penanda keturunan (mis. `.pos .category-button`),
+   dan `.pos` polos akan mengenai mereka juga. `body.pos > .pos` hanya kena akar
+   aplikasi.
+   =========================================================================== */
+body.pos > .pos {
+    display: grid !important; // menimpa Bootstrap `.d-flex` yang ber-!important
+    grid-template-columns: var(--gy-sidebar-w) 1fr;
+    grid-template-rows: auto 1fr; // Navbar · konten  (baris tab meja: Fase 6)
+}
+
+.gy-sidebar {
+    grid-column: 1;
+    grid-row: 1 / -1; // setinggi layar, termasuk di samping header
+    display: flex;
+    flex-direction: column;
+    gap: var(--gy-nav-gap);
+    min-width: 0;
+    // Padding mengikuti board: 33px atas (blok merek), 12px samping, 18px bawah.
+    padding: var(--gy-sidebar-pad-top) var(--gy-sidebar-pad-x) var(--gy-sidebar-pad-bottom);
+    background: var(--gy-surface);
+    border-right: 1px solid var(--gy-border);
+    overflow: hidden;
+}
+
+// Anak ke-2 dan ke-3 dari `.pos`: header dan konten, dua-duanya masuk kolom 2.
+body.pos > .pos > .pos-topheader {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+body.pos > .pos > .pos-content {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0; // wajib: grid item default-nya min-width:auto, tidak bisa menyusut
+    min-height: 0;
+}
+
+/* --- Merek: kotak logo + wordmark dua warna ---
+   REVISI 22 Sep 2026 (permintaan pemilik proyek): gambar logo DIKEMBALIKAN ke
+   blok merek sidebar. Fase 1 dulu melepasnya mengikuti board pos2 ("tidak ada
+   badge/kotak logo, hanya teks + ikon cabai"), dan hasilnya di layar kasir
+   hanya ada kata "Geprek Yukss" tanpa lambang apa pun — itulah yang terbaca
+   sebagai "label perusahaan tanpa logo".
+
+   Berkas logonya `logo.jpg` yang SAMA dengan brand navbar <992px (section 1b)
+   dan logo bawaan POS (section 8): satu berkas merek untuk seluruh addon, jadi
+   mengganti logo cukup mengganti satu berkas.
+
+   Kelas `.gy-sidebar__logo` dibaca harness verifikasi (petak `hasLogoImg`),
+   jadi jangan mengganti namanya tanpa ikut menyesuaikan
+   `scripts/pos_browser_check.mjs`. */
+.gy-sidebar__brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    height: var(--gy-brand-h);
+    // Margin KIRI = --gy-nav-pad supaya KOTAK LOGO sejajar dengan kolom IKON item
+    // nav (ikon nav juga mulai --gy-nav-pad dari tepi bar, lihat .gy-nav-item).
+    margin: 0 0 var(--gy-brand-gap) var(--gy-nav-pad);
+    min-width: 0;
+}
+
+.gy-sidebar__logo {
+    width: 34px;
+    height: 34px;
+    flex: none;
+    object-fit: contain;
+    // Sama alasannya dengan brand navbar: logo.jpg kotak merah penuh.
+    border-radius: var(--gy-radius-mark);
+}
+
+// Wadah dua baris (wordmark + tagline). Wajib ada sebagai elemen tersendiri:
+// tanpa itu, .gy-sidebar__wordmark yang `display: flex` akan menyejajarkan
+// tagline ke SAMPING nama, bukan di bawahnya.
+.gy-sidebar__wordmark-block {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.05;
+}
+
+.gy-sidebar__wordmark {
+    display: flex;
+    align-items: baseline;
+    gap: 0.3em;
+    font-size: var(--gy-fs-brand);
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    line-height: 1.05;
+    white-space: nowrap;
+}
+
+// "Geprek" merah / "Yukss" gelap — pola dua warna pos2 ("CHILI" merah + "POS"
+// gelap), hanya teksnya yang tetap merek proyek ini.
+// Nilainya WAJIB sama dengan .gy-word-1/.gy-word-2 di section 1b: keduanya
+// merek yang sama di dua tempat (sidebar ≥992px, brand navbar <992px).
+.gy-sidebar__word-1 {
+    color: var(--gy-accent-logo);
+}
+
+.gy-sidebar__word-2 {
+    color: var(--gy-text);
+}
+
+// Tagline "AYAM GEPREK" — nilai & nadanya SENGAJA sama dengan .gy-tagline milik
+// brand navbar (section 1b: 700, tracked, warna --gy-accent), supaya merek yang
+// sama tidak terlihat sebagai dua merek berbeda antara layar lebar dan sempit.
+.gy-sidebar__tagline {
+    margin-top: 2px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--gy-accent);
+    white-space: nowrap;
+}
+
+/* --- Daftar item nav (board: bar 50px, ikon 16px, label 16px/500) --- */
+.gy-sidebar__nav {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gy-nav-gap);
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.gy-nav-item {
+    display: flex;
+    align-items: center;
+    gap: var(--gy-nav-icon-gap);
+    min-height: var(--gy-nav-h);
+    width: 100%;
+    padding: 0 var(--gy-nav-pad);
+    border: 1px solid transparent;
+    border-radius: var(--gy-radius-nav);
+    background: transparent;
+    color: var(--gy-text);
+    font-size: var(--gy-fs-nav);
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+
+    &:hover {
+        background: var(--gy-surface-2);
+    }
+
+    &:active {
+        background: var(--gy-surface-3);
+    }
+
+    // Cincin fokus keyboard (pos2: 2px + offset 2px). :focus-visible, BUKAN
+    // :focus — supaya klik mouse tidak meninggalkan cincin di baris terakhir.
+    &:focus-visible {
+        outline: var(--gy-focus-ring-w) solid var(--gy-focus-ring);
+        outline-offset: var(--gy-focus-ring-offset);
+    }
+
+    i,
+    .fa {
+        width: var(--gy-icon-size);
+        flex: none;
+        text-align: center;
+        font-size: 1rem;
+        // `inherit`, bukan warna aksen tetap: di pos2 ikon mengikuti warna
+        // barisnya (gelap saat tenang, merah saat aktif). Sebelumnya semua ikon
+        // dipaksa hijau, jadi baris tenang pun terlihat "aktif".
+        color: inherit;
+    }
+}
+
+// Item AKTIF = tint merah + teks/ikon merah, SELEBAR ISINYA (bukan bar penuh),
+// dengan bayangan halus. Ini REVISI pemilik proyek yang berbeda dari board:
+// di board bar aktifnya isian merah penuh selebar panel.
+//
+// Nama kelas ini muncul di sidebar.xml lewat t-att-class. Jangan menghapusnya
+// dari sana: kalau berkas mana pun berhenti memakainya, selector ini jadi
+// selector mati — gaya yang tetap ada di CSS tapi tidak pernah mengenai apa pun.
+.gy-nav-item--active {
+    width: fit-content;
+    padding-right: 24px; // board: bar aktif tetap punya ruang kanan setelah label
+    background: var(--gy-accent-soft);
+    color: var(--gy-accent);
+    font-weight: 600;
+    box-shadow: var(--gy-shadow-pill);
+
+    &:hover {
+        background: var(--gy-accent-soft-hover);
+    }
+
+    &:active {
+        background: var(--gy-accent-soft-pressed);
+    }
+
+    &:focus-visible {
+        background: var(--gy-accent-soft-hover);
+    }
+}
+
+.gy-nav-item__label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* --- Blok bawah: HANYA "Tutup Kasir" ---
+   Kartu kasir (avatar + nama) DIHAPUS dari sini, dan aturan
+   `.gy-sidebar__user`, `.gy-sidebar__avatar`, `.gy-sidebar__user-name` ikut
+   dihapus bersama markup-nya. Nama kasir tidak hilang dari aplikasi: tempatnya
+   sekarang di kartu kasir topbar (Fase 2) — sebelumnya memang tampil dua kali.
+
+   `border-top` juga dihapus: pos2 tidak punya satu pun divider DI DALAM panel;
+   batas sidebar hanya garis 1px di sisi kanannya.
+   `margin-top: auto` tetap: itulah yang mendorong blok ini ke dasar panel. */
+.gy-sidebar__footer {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--gy-nav-gap);
+}
+
+// CATATAN: kelas `gy-nav-item--logout` sudah TIDAK ADA lagi — baris "Tutup
+// Kasir" memakai gaya item nav yang sama persis (ikon ikut warna teks, bukan
+// oranye). Kelasnya juga sudah dilepas dari sidebar.xml, supaya tidak ada nama
+// kelas yang tertinggal tanpa aturan (kebalikan dari selector mati).
+
+/* Di >=992px rel sidebar membawa brand, jadi DUA sumber brand bawaan Odoo
+   dimatikan supaya tidak ada logo dobel/tiga kali:
+     - brand navbar (.gy-header-brand)  → diatur di section 1b (tampil <992px,
+       mati >=992px), bukan di-override dari sini;
+     - logo tengah bawaan Odoo (.pos-centerheader, ber-class d-xl-flex dan hanya
+       dirender saat tidak ada order berjalan) → kalau dibiarkan, di >=1200px
+       tanpa order yang tampil adalah logo sidebar DAN logo tengah sekaligus.
+   `!important` wajib: `.d-xl-flex` juga ber-!important. */
+@media (min-width: 992px) {
+    .pos .pos-centerheader {
+        display: none !important;
+    }
+}
+
+/* Di bawah breakpoint lg, tata letak DIKEMBALIKAN ke flex-column seperti sebelum
+   overhaul — jalur yang sudah terbukti, jadi tidak ada risiko baru di ponsel.
+
+   Rel-nya TIDAK lagi disembunyikan: sejak Fase E ia jadi DRAWER (section 23).
+   Sampai 22 Sep 2026 di sini tertulis `display: none !important`, dan itulah
+   yang membuat item Outlet/Self Order/Grabfood/Shopeefood/Gofood/Pengaturan —
+   beserta Tutup Kasir — tidak punya jalan masuk sama sekali di <992px.
+   Karena panelnya `position: fixed` di section 23, ia keluar dari alur flex, dan
+   mematikan display-nya justru akan mematikan drawer itu sendiri. */
+@media (max-width: 991.98px) {
+    body.pos > .pos {
+        display: flex !important;
+        flex-direction: column;
+    }
+}
+
+/* ===========================================================================
+   21. TOPBAR pos2 — judul, tombol ikon, kartu kasir   (Fase 2)
+   ===========================================================================
+   Acuan gaya: topbar, tombol ikon, dan kartu kasir. Angka dari board:
+   topbar 78px (di sini 72px), tombol ikon 38×38 sudut 10px, avatar kasir 34px bulat.
+
+   Apa yang TIDAK diubah di sini: tombol Tables/Register/Orders/tab order tetap
+   seperti bawaannya (pos2 tidak punya padanannya — board hanya menggambar
+   search, tombol barcode, dan kartu kasir). Tombol-tombol itu fungsional;
+   menggantinya dengan ikon polos demi mirip board = kehilangan fungsi.
+   =========================================================================== */
+
+// Board 78px; Odoo merender 66px dari isinya. min-height (bukan height) supaya
+// header tetap boleh membesar kalau ada tab order yang panjang.
+.pos .pos-topheader {
+    min-height: var(--gy-topbar-h);
+}
+
+/* --- Judul halaman --- */
+.gy-topbar__title {
+    margin: 0 12px 0 0;
+    min-width: 0;
+    font-size: 20px; // board: ±20px
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--gy-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    // Di bawah 1200px, header Odoo sudah penuh tombol (Meja/Daftar/Order + tab
+    // order). Appbar ringkas versi pos2 untuk layar sempit = Fase E; sampai
+    // saat itu judulnya disembunyikan supaya tidak mendesak tombol yang ada.
+    @media (max-width: 1199.98px) {
+        display: none;
+    }
+}
+
+/* --- Tombol barcode: kotak 38×38 ---
+   `:has()` dipakai supaya HANYA tombol barcode yang dipaksa persegi — tombol
+   lain di header (menu ⋮, status offline) punya label/nilai sendiri dan akan
+   terpotong kalau ikut dipaksa 38px. `:has()` didukung Chromium 105+, Firefox
+   121+, Safari 15.4+; kalau suatu saat tidak didukung, efeknya hanya tombol
+   barcode kembali selebar bawaannya (bukan rusak). */
+.pos .pos-rightheader .btn:has(i.fa-barcode) {
+    width: var(--gy-iconbtn-size);
+    height: var(--gy-iconbtn-size);
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- Kartu kasir: avatar bulat + nama + status ---
+   Struktur ditambahkan oleh `navbar/cashier_card_patch.xml`; di sini hanya
+   gayanya. Tombolnya TIDAK bisa diklik di konfigurasi ini (module_pos_hr=false
+   → `onCashierClick` milik pos_hr langsung keluar, dan core memberi kelas
+   `not-clickable pe-none`), jadi jangan memasang gaya yang mengundang klik
+   seperti tanda panah — lihat catatan di berkas tambalannya. */
+.pos .cashier-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 8px 3px 3px; // board: avatar 3px dari tepi, teks 8px
+    border: 1px solid transparent;
+    border-radius: var(--gy-radius-control);
+    background: transparent;
+    color: var(--gy-text);
+}
+
+.pos .cashier-name .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%; // board: avatar bulat
+    object-fit: cover;
+    flex: none;
+}
+
+.gy-cashier__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    line-height: 1.3;
+}
+
+.gy-cashier__name {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 14px; // design: .cashier__meta b — --fs-md
+    font-weight: 700;
+    color: var(--gy-text);
+}
+
+.gy-cashier__status {
+    font-style: normal; // elemen <i>; pos2 memakai <i> sebagai teks biasa
+    font-size: 12px;    // design: --fs-sm
+    font-weight: 600;
+    color: var(--gy-online);
+    white-space: nowrap;
+
+    &--offline {
+        // Saat offline, merah aksen MENGGANTIKAN hijau — bukan ditambah, supaya
+        // warnanya tetap satu makna (hijau = tersambung).
+        color: var(--gy-accent);
+    }
+}
+
+/* ===========================================================================
+   22. PANEL ORDER pos2 — lebar, header, baris item, ringkasan, dua tombol
+   (Fase 4)
+   ===========================================================================
+   Acuan: panel order — header, judul, mode, baris item (nama/qty/nominal),
+   ringkasan, dan dua tombol aksi.
+
+   DUA CATATAN PENTING SEBELUM MENGUBAH APA PUN DI SINI:
+
+   1. `!important` di blok ini bukan kemalasan. Utility Bootstrap yang dipakai
+      markup Odoo (`px-2`, `pt-2`, `pb-2`, `rounded-3`) DITULIS DENGAN
+      `!important` di bundel Odoo — terverifikasi langsung di
+      point_of_sale.assets_prod.min.css: `.px-2{padding-right: 8px !important; …}`.
+      Jadi padding/radius dari utility TIDAK bisa dikalahkan tanpa `!important`
+      (inilah juga akar "kartu produk ter-render 6px" pada Fase 3).
+   2. Aturan di bawah di-scope `.product-screen` + media query, TAPI TIDAK semua
+      media query-nya sama — ada tiga cakupan, dan bedanya disengaja:
+        * `(min-width: 992px)` — LEBAR panel dan TOMBOL-TOMBOLNYA. Hanya masuk akal
+          kalau panel memang panel samping.
+        * `(min-width: 992px), (max-width: 767.98px)` — "wajah" panel: header,
+          daftar item, ringkasan. Berlaku juga di pane "Keranjang" ponsel, karena
+          DOM-nya sama; lihat blok penjelasan sebelum media query daftar itu.
+        * `<992px`: Odoo memakai tata letak ponsel (pane berganti), di mana panel
+          ini bukan panel samping lagi — tata letak ringkasnya = Fase E;
+        * `.product-screen`: template `point_of_sale.Orderline` dipakai BERSAMA
+          struk, dan baris struk dirender di luar `.product-screen`. Awalan itu
+          menutup jalur masuk ke struk dengan sendirinya, jadi tidak perlu menebak.
+        * `>=992px` juga menutup pemakaian `.orderline` di layar tiket, yang
+          memakai ActionpadWidget + class `.pay-order-button` yang sama.
+   =========================================================================== */
+
+@media (min-width: 992px) {
+    // Lebar panel dari token `--gy-order-w`. Odoo mengatur lebar panel lewat
+    // `width`/`max-width` (bukan `flex-basis`), dan nilainya berbeda per
+    // breakpoint: 450px di <=768px, 400px di <=1199.98px. Ketiganya ditulis di
+    // sini supaya tidak ada satu breakpoint pun yang lolos.
+    //
+    // NILAI 300px BUKAN ANGKA BOARD (board: 222px) — lihat catatan token di
+    // `:root` dan entri v7 di changelog: 222px hanya cukup di atas kertas.
+    .pos .product-screen > .leftpane {
+        flex: 0 0 var(--gy-order-w);
+        width: var(--gy-order-w) !important;
+        max-width: var(--gy-order-w) !important;
+        min-width: 0;
+        background: var(--gy-surface);
+    }
+
+    // Laptop 992–1279px: panel dipersempit supaya grid produk tetap 4 kolom di
+    // 1280 & 1200-1279px. Tanpa ini, 300px di 1280 menyisakan 700px untuk 4 kartu
+    // (175px/kartu — masih terbaca, tapi 264px membuat kartunya lebih lega).
+    // CATATAN (v9): di 992-1149px grid-nya sekarang 3 kolom, bukan 4 — lihat
+    // blok kolom di dekat aturan grid. 264px TIDAK diubah di sana: yang terlalu
+    // kecil di rentang itu kartunya, bukan panelnya, dan memperlebar panel akan
+    // makin menyempitkan kartu.
+    @media (max-width: 1279.98px) {
+        .pos .product-screen > .leftpane {
+            --gy-order-w: 264px;
+        }
+    }
+
+    // >=1440px: panel naik lagi (v8) ke 440px — nilai yang dipilih pemilik
+    // proyek, mengikuti pola panel checkout marketplace (+-30% lebar layar),
+    // dan tetap di situ sampai layar sebesar apa pun (yang bertambah di layar
+    // sangat lebar adalah KOLOM grid, bukan panel). Nilai dasar 340px di :root
+    // berlaku untuk 1280-1439px.
+    //
+    // Angka TETAP, bukan `vw`: mode letterbox menskalakan seluruh layar
+    // 1280x800 lewat transform, dan `vw` dihitung dari viewport ASLI — panel
+    // berbasis vw akan memakan kotak design itu (26vw di layar 1920 = 499px
+    // di dalam kotak selebar 1280).
+    //
+    // Pangsa panel (terukur di browser): 340/1280 = 27%, 440/1440 = 31%,
+    // 440/1600 = 28%, 440/1920 = 23%. Sebelumnya 300px di semua lebar itu =
+    // 21% di 1440 dan 16% di 1920 — dari situlah keluhan panel terasa kecil.
+    @media (min-width: 1440px) {
+        .pos .product-screen > .leftpane {
+            --gy-order-w: 440px;
+        }
+    }
+}
+
+/* ---------------------------------------------------------------------------
+   "WAJAH" PANEL — header, daftar item, ringkasan
+
+   BLOK INI BERLAKU DI DUA TEMPAT, dan itu memang tujuannya: cakupan media
+   query-nya DAFTAR, `(min-width: 992px), (max-width: 767.98px)`.
+
+   Kenapa: panel order Odoo memakai DOM yang SAMA di dua tata letak — panel
+   samping desktop (>=992px) dan pane "Keranjang" ponsel (<768px, setelah tombol
+   Keranjang Belanja di section 24 diklik). Sebelum ini blok wajahnya hanya hidup
+   di >=992px, dan akibatnya terukur di 390×844: baris item pane ponsel masih
+   bergaya stok Odoo — radius 14px, nama 14px/400 tanpa batas baris, harga duduk
+   di pita ketiga RATA KIRI, ikon hapus gelap, dan garis pemisah header 0px.
+
+   Kenapa DAFTAR media query, bukan menyalin aturannya ke blok <768px: dua salinan
+   pasti melenceng, dan di berkas ini hal itu sudah pernah terjadi pada gaya yang
+   hidup dua kali (§10e butir 7). Dengan daftar, setiap perubahan pada baris item
+   otomatis ikut ke kedua tata letak — tidak ada yang bisa lupa disamakan.
+
+   Rentang 768–991px SENGAJA tidak ikut: di situ Odoo masih memakai tata letak
+   panel sampingnya sendiri (terukur di 768 & 991: panel 400px, tombol bayar
+   70px). Mengubahnya berarti merancang ulang tablet, dan itu pekerjaan tersendiri
+   yang belum diminta — jadi dibiarkan persis seperti sebelumnya.
+   ------------------------------------------------------------------------- */
+@media (min-width: 992px), (max-width: 767.98px) {
+    /* --- Header: "Order #<kode>" + pill status + garis pemisah --- */
+    .pos .product-screen .gy-order-header {
+        flex: none;
+        // Wrap TETAP ada sebagai jaring pengaman: nama preset bisa lebih panjang
+        // dari "Makan di Tempat" (119px). Di panel 300px, judul (105px) + pill
+        // (kini 11px/4-8 padding, ±100px) + tombol bersihkan + gap = ±249px dari
+        // 272px yang tersedia — jadi header normalnya SATU baris, dan hanya
+        // preset yang lebih panjang dari itu yang turun ke baris kedua.
+        flex-wrap: wrap;
+        row-gap: 6px;
+        margin: 0 var(--gy-order-pad-x);
+        padding: 10px 0;
+        border-bottom: 1px solid var(--gy-divider);
+    }
+
+    /* --- Baris item --- */
+    // `.order-container` (dari order_display.xml) memang `overflow-y: auto`, jadi
+    // dia yang menggulir — bukan `.leftpane`. Scrollbar bawaan Chromium (15px)
+    // memakan lebar baris dan lebar baris berubah sesuai isi, jadi scrollbar
+    // dibuat tipis + gutter stabil supaya lebar baris tetap dan isi tidak bergeser.
+    .pos .product-screen .order-container {
+        // Padding kanan DIKURANGI lebar scrollbar yang dipesan `scrollbar-gutter`
+        // di bawah. Alasannya: scrollbar duduk di dalam tepi kanan kotak, jadi ia
+        // memakan 10px dari padding 14px — terukur tepi kanan baris item 1342
+        // sementara Total/tombol/header berhenti di 1352, dan baris item jadi
+        // 10px lebih pendek dari elemen lain di panel yang sama.
+        padding: 0 var(--gy-order-pad-x) !important;
+        padding-right: calc(var(--gy-order-pad-x) - var(--gy-order-scrollbar)) !important;
+        scrollbar-width: thin;
+        scrollbar-color: var(--gy-border) transparent;
+        scrollbar-gutter: stable;
+
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-track { background: transparent; }
+        &::-webkit-scrollbar-thumb { background: var(--gy-border); border-radius: 3px; }
+    }
+
+    // Board: baris polos tanpa kotak — jarak yang memisahkan, bukan border.
+    // (Blok `.pos .orderline` di section 5 tetap ada untuk konteks non-panel.)
+    .pos .product-screen .orderline {
+        background: transparent !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        margin-bottom: 0 !important;
+        padding: 10px 0 !important;
+
+        &.selected {
+            border: 0 !important;
+        }
+
+        // --- Susunan isi baris: DUA KOLOM (isi | harga) ---
+        //
+        // Kenapa grid, bukan sekadar flex: harga (`.gy-line-price`) BUKAN anak
+        // `.line-details` — tambalan kita menyisipkannya SESUDAH `.line-details`
+        // (orderline_patch.xml), jadi ia elemen blok sendiri dan selalu turun ke
+        // pita berikutnya. Di panel 222px (Fase 4) hasilnya tiga pita: nama /
+        // stepper / harga, baris terukur 107–124px. Dengan grid pada pembungkus
+        // `<div class="d-flex flex-column w-100">`, harga naik sejajar baris nama
+        // di kolom keduanya — tanpa memindahkan satu pun elemen di XML.
+        //
+        // `!important` wajib: bungkus itu membawa utility `.d-flex` milik Odoo
+        // yang menulis `display: flex !important`.
+        > .d-flex.flex-column.w-100 {
+            display: grid !important;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: start;
+            column-gap: 8px;
+            row-gap: 6px;
+            // `p-2` (8px) milik Odoo dibuang: dengan padding itu nama mulai 9px dan
+            // harga berhenti 18px dari tepi dalam panel, sementara judul header,
+            // ringkasan, dan tombol rata di 1155/1426. Setelah dibuang, kolom nama
+            // dan kolom harga duduk tepat di garis yang sama dengan elemen lain.
+            // Padding vertikal baris sudah diatur `.orderline` (10px 0).
+            padding: 0 !important;
+        }
+
+        // Penempatan eksplisit (bukan auto-placement): kalau Odoo kelak menambah
+        // anak lain di pembungkus itu, anak itu dapat baris ketiga alih-alih
+        // menyelip di antara kolom kita.
+        //
+        // TIGA baris sejak v10: baris 1 = nama (kolom 1) + harga (kolom 2),
+        // baris 2 = stepper + tombol hapus SELEBAR PANEL, baris 3 = info-list.
+        > .d-flex.flex-column.w-100 > .line-details { grid-column: 1; grid-row: 1; }
+        > .d-flex.flex-column.w-100 > .gy-line-price { grid-column: 2; grid-row: 1; }
+        > .d-flex.flex-column.w-100 > .gy-line-controls { grid-column: 1 / -1; grid-row: 2; }
+        > .d-flex.flex-column.w-100 > .info-list { grid-column: 1 / -1; grid-row: 3; }
+
+        // `ms-2` bawaan pada info-list (info diskon/catatan per baris) menggeser
+        // barisnya 8px dari rel panel — terukur x=1050 sementara nama/qty dan
+        // stepper mulai di 1042.
+        > .d-flex.flex-column.w-100 > .info-list {
+            margin-left: 0 !important;
+        }
+
+        // `.line-details` tinggal berisi nama (harga bawaan dibuang, stepper sudah
+        // pindah ke luar — lihat orderline_patch.xml), jadi tidak ada lagi yang
+        // perlu dilipat di dalamnya. `flex-wrap` + `gap` yang dulu ada di sini
+        // DIHAPUS, bukan dilupakan: tanpa stepper di dalamnya keduanya tidak
+        // mengenai apa pun.
+        .line-details {
+            align-items: flex-start;
+        }
+
+        // Nama maksimum 2 baris (design; Odoo bawaannya `text-truncate` = 1 baris).
+        //
+        // JEBAKAN (terukur, bukan dugaan): `.product-name` di Odoo 19 adalah
+        // WADAH FLEX berisi <span class="qty"> + <span>TEKS NAMA</span>, bukan
+        // elemen berisi teks. Percobaan pertama mengubah wadahnya jadi
+        // `display:-webkit-box` + line-clamp: span teksnya lalu hanya kebagian
+        // 12px lebar, teksnya menumpuk satu huruf per baris, dan SATU baris order
+        // terukur 140px tinggi (173px termasuk harga). Yang di-clamp harus span
+        // teksnya, bukan wadahnya — jadi wadah tetap flex dan span itu yang diberi
+        // `-webkit-line-clamp`. (`span.qty` bawaan ada di wadah yang sama tetapi
+        // sudah disembunyikan di keranjang — lihat catatan di bawah.)
+        .product-name {
+            flex: 1 1 100%;             // nama memakai lebar penuh barisnya
+            align-items: flex-start;
+            min-width: 0;
+
+            > span:not(.qty) {
+                flex: 1 1 auto;
+                min-width: 0;
+                font-size: 13px;        // design: .order__name → --fs-base
+                font-weight: 600;
+                line-height: 1.35;
+                white-space: normal !important;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-box-orient: vertical;
+                -webkit-line-clamp: 2;
+                overflow-wrap: anywhere;
+            }
+        }
+
+        // `span.qty` bawaan Odoo TIDAK lagi digayai di sini: qty sudah tampil
+        // lewat stepper `QuantityButtons`, dan span itu disembunyikan di keranjang
+        // oleh `t-att-style` di orderline_patch.xml (xpath 4). Di struk span itu
+        // tetap tampil apa adanya (mode receipt tidak disentuh).
+
+        // Stepper + tombol hapus: barisnya sendiri, dan kini SELEBAR PANEL
+        // (`grid-column: 1 / -1` di blok penempatan di atas). Dua rel lurus:
+        // stepper rata KIRI sejajar qty/nama, tombol hapus rata KANAN sejajar
+        // harga — sama dengan tombol bersihkan di header.
+        //
+        // Sebelum v10 keduanya rata kanan TAPI hanya di dalam kolom nama, jadi
+        // ikon hapus terukur "mengambang" di tengah panel (x 1229/1232/1235 dari
+        // tiga baris, pada panel yang tepi kanannya 1352) dan x-nya bergeser tiap
+        // baris karena lebar kolom harga ikut panjang-pendek nominal harga.
+        > .d-flex.flex-column.w-100 > .gy-line-controls {
+            justify-content: space-between;
+            width: 100%;
+            margin-left: 0 !important;   // `ms-2` dari markup lama
+
+            // Anak pertama = wadah `QuantityButtons`. Markupnya
+            // `<div class="input-group justify-content-end justify-content-md-center">`
+            // dan `.input-group` Bootstrap itu `width: 100%` + flex, sehingga
+            // tombol −/+ terukur terdampar di TENGAH baris (x 1131, bukan 1042)
+            // walau ruang di kiri kosong. Dikecilkan selebar isinya, rata kiri.
+            > .input-group {
+                width: auto;
+                flex: 0 0 auto;
+                justify-content: flex-start !important;  // utility `justify-content-md-center` juga !important
+                padding: 0 !important;                   // `p-1 pt-0` bawaan
+            }
+        }
+
+        // Ikon hapus: warna aksen, bukan teks gelap. Aturan section 16 kalah oleh
+        // `.pos .orderline * { color: … !important }` di section 10 — dan itulah
+        // yang membuat ikonnya terukur rgb(18,27,33) alias hitam seperti glyph
+        // nyasar. Dikembalikan ke aksen lewat selektor yang lebih spesifik
+        // (0,4,1 vs 0,2,0), jadi `!important` di sini memang perlu.
+        .gy-delete-line-btn,
+        .gy-delete-line-btn i {
+            color: var(--gy-accent) !important;
+        }
+    }
+
+    // Harga baris: rata kanan & GELAP. Board memakai merah hanya untuk aksi
+    // (chip aktif, pill, CTA) dan angka Total — harga per item gelap.
+    .pos .product-screen .gy-line-price {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gy-text);
+        text-align: right;
+        align-self: start;      // sejajar baris PERTAMA (nama), bukan tengah baris
+        white-space: nowrap;    // harga tidak boleh terpotong menjadi "33.0…"
+    }
+
+    /* --- Ringkasan --- */
+    .pos .product-screen .order-summary {
+        flex: none;
+        margin: 0 var(--gy-order-pad-x);
+        padding: 12px 0 !important;     // menimpa `p-2` milik Odoo
+        gap: 12px !important;           // design: .order__sum gap 12px (Odoo: 4px)
+        border-top: 1px solid var(--gy-divider);
+        border-bottom: 0 !important;    // Odoo memberi border-bottom; board tidak
+        font-size: 14px;
+    }
+
+    // Baris "Diskon" (ditambahkan product_screen_layout_patch.xml) — dirender
+    // HANYA kalau order memang berdiskon.
+    .pos .product-screen .order-summary .gy-summary-discount {
+        display: flex;
+        justify-content: space-between;
+        width: 100%;
+        color: var(--gy-text-muted);
+        font-size: 14px;
+    }
+
+    // Baris "Tambah Catatan": dulu pitanya selebar panel PENUH (terukur
+    // 1027→1366) sementara garis ringkasan di atasnya hanya selebar isi
+    // (1041→1352) — dua rentang garis berbeda dalam 90px, dan itu yang terbaca
+    // sebagai "tidak rata". Sekarang pitanya duduk di rel yang sama dengan
+    // elemen lain; padding sampingnya dinolkan supaya teksnya tetap mulai di
+    // 1041, bukan 14px (margin) + 14px (padding).
+    .pos .product-screen .gy-add-note {
+        margin: 0 var(--gy-order-pad-x);
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+
+    // Label "Total": 16px/700 (design `.order__row--total span`). Diambil lewat
+    // `> .fs-3 > span:first-child` karena markup total row milik Odoo
+    // (order_display.xml) tidak punya kelas khusus untuk labelnya; yang punya
+    // kelas hanya angkanya (`.total`, diatur di section 5).
+    .pos .product-screen .order-summary > .fs-3 > span:first-child {
+        font-size: 16px;
+        font-weight: 700;
+    }
+
+}
+
+@media (min-width: 992px) {
+    /* --- Tombol: Simpan Order (putih berbingkai) + Lanjut ke Pembayaran (merah) --- */
+    .pos .product-screen .pads {
+        flex: none;
+        padding: 0 var(--gy-order-pad-x) 14px !important;
+    }
+
+    // Baris kontrol dibuat MELIPAT supaya tombol simpan bisa menempati barisnya
+    // sendiri tepat di atas tombol bayar = dua tombol bertumpuk seperti board,
+    // tanpa memindahkan elemen antar container (lihat catatan di
+    // control_buttons_patch.xml).
+    .pos .product-screen .control-buttons {
+        flex-wrap: wrap;
+        gap: var(--gy-control-gap) !important;   // `gap-2` bawaan juga !important
+        padding-top: 0 !important;
+        width: 100%;
+        // `justify-content-between` bawaan Odoo DIBIARKAN: dengan itu chip
+        // terakhir (preset order, mis. "Makan di Tempat") duduk di rel kanan
+        // panel — status order memang tempatnya di kanan, dan barisnya penuh
+        // tanpa lubang di semua lebar. (Dicoba diratakan ke kiri: di panel
+        // 440px menyisakan lubang 143px dan justru memindahkan ⋮ ke barisnya
+        // sendiri — lihat catatan di `--gy-control-gap`.)
+
+        > .btn,
+        > button {
+            height: 36px;
+            min-width: 0;
+            padding: 0 8px;
+            font-size: 12px;
+            border-radius: var(--gy-radius-control);
+            background: var(--gy-surface-2);
+            border: 1px solid var(--gy-border);
+            color: var(--gy-text);
+        }
+
+        .gy-save-order-btn {
+            // v10 memakai `1 1 auto` supaya ⋮ ikut duduk di baris yang sama,
+            // tetapi `1 1 auto` TIDAK menjamin itu: di panel 440px (>=1440px)
+            // chip + tombol ini masih muat satu baris, jadi ⋮ terdorong turun
+            // dan TERKURUNG SENDIRI di kiri bawah (terukur: Simpan Order di
+            // x=1775 sebaris chip, ⋮ sendirian di (1495,958)). Sekarang
+            // `flex-basis` dihitung = 100% baris dikurangi lebar ⋮ dan satu
+            // `gap`, sehingga tombol ini SELALU memulai barisnya sendiri
+            // SEKALIGUS menyisakan tepat ruang untuk ⋮ di sebelah kanannya.
+            // `flex-grow: 0` WAJIB (bukan `1 1 ...`): kalau boleh tumbuh, tombol
+            // ini mengisi 100% barisnya sendiri dan ⋮ justru terlempar ke baris
+            // berikutnya — itu yang terukur saat percobaan pertama.
+            //
+            // `- 1px` bukan hiasan: lebar isi baris ini pecahan (mis. 311,5px),
+            // dan pada SELISIH PERSIS 0 hasil pengukuran nyatanya ⋮ tetap
+            // pindah baris — pemenggalan baris flex terjadi SEBELUM pembulatan,
+            // jadi hitungan yang "pas" bisa meleset sepersekian piksel. Satu
+            // piksel cadangan membuat ⋮ selalu ikut di baris yang sama.
+            flex: 0 1 calc(100% - var(--gy-order-btn-h) - var(--gy-control-gap) - 1px);
+            height: var(--gy-order-btn-h);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            background: var(--gy-surface);      // ghost: putih + border
+            border: 1px solid var(--gy-border);
+            color: var(--gy-text);
+        }
+
+        .gy-save-order-label {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        // Tombol ⋮ ("aksi lain" bawaan Odoo): kotak 46×46 sebelah kanan Simpan
+        // Order, tinggi & sudut mengikuti tombol tetangganya. Aturan ini harus
+        // berada SETELAH blok `> .btn, > button` di atas — specificity-nya sama,
+        // jadi yang belakangan yang menang.
+        > .more-btn {
+            flex: 0 0 auto;
+            width: var(--gy-order-btn-h);
+            height: var(--gy-order-btn-h);
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+    }
+
+    // Chip preset (mis. "Makan di Tempat") di baris kontrol. Bawaan Odoo
+    // memberinya warna dari `preset.color` (kelas `o_colorlist_item_color_<n>`),
+    // dan di antara tombol putih/abu tema ini warna itu terbaca sebagai biru
+    // pucat yang berdiri sendiri (terukur rgb(187,215,248)). Status order sudah
+    // dibawa pill merah di header panel, jadi chip ini cukup seragam dengan dua
+    // chip di sebelahnya — fungsinya (membuka daftar preset) tidak diubah.
+    .pos .product-screen .control-buttons [class*="o_colorlist_item_color_"] {
+        // `!important` memang perlu: kelas warna Odoo menulis `background-color`
+        // DAN `color` dengan `!important` (terverifikasi di bundel:
+        // `.o_colorlist_item_color_1{…background-color: var(--background-color) !important;…}`),
+        // jadi tanpa itu chip-nya tetap biru.
+        background: var(--gy-surface-2) !important;
+        color: var(--gy-text) !important;
+    }
+
+    // Baris tombol `.actionpad` (satu div `d-flex gap-2 flex-fill`) memuat dua
+    // tombol: "Baru" (dari pos_restaurant) dan tombol bayar. Odoo menyusunnya
+    // SATU BARIS (`flex-wrap: nowrap`), jadi tombol bayar "lebar penuh" justru
+    // melebar keluar layar — terukur x=1497 pada viewport 1440px, 57px di luar
+    // panel. Dilipat supaya tombol bayar menempati barisnya sendiri, seperti
+    // board (dua tombol bertumpuk).
+    .pos .product-screen .actionpad > .d-flex {
+        flex-wrap: wrap;
+        // Sama seperti baris kontrol di atas: `gap-2` (8px, !important) bawaan
+        // Odoo ditimpa dengan token ini supaya satu angka mengatur keduanya.
+        gap: var(--gy-control-gap) !important;
+    }
+
+    // Tombol "Baru": lebar mengikuti isinya. Tidak dihapus meski board hanya
+    // menggambar dua tombol — menyembunyikannya berarti kasir kehilangan cara
+    // membuat order baru tanpa kembali ke layar meja.
+    // v10: tingginya disamakan dengan tombol bayar (46px) karena keduanya kini
+    // berbagi SATU baris.
+    .pos .product-screen .actionpad .gy-btn-new {
+        flex: 0 0 auto;
+        width: auto !important;
+        height: var(--gy-order-btn-h);
+        min-height: var(--gy-order-btn-h);
+    }
+
+    // Tombol bayar: mengisi sisa baris di sebelah "Baru" (v10). Sebelumnya
+    // `flex: 1 0 100%` menaruhnya di barisnya sendiri, dan baris "Baru" di atasnya
+    // jadi baris tombol kelima yang bolong kanan-kiri.
+    // Warna/sudutnya sendiri ditentukan SEKALI di section 6 (`.pay-order-button`).
+    .pos .product-screen .gy-pay-btn {
+        flex: 1 1 auto;
+        width: auto !important;
+        min-width: 0;
+        height: var(--gy-order-btn-h);
+        // Odoo menetapkan `min-height: 70px` untuk `.pay-order-button`
+        // (point_of_sale/.../product_screen.scss:22), dan min-height MENANG atas
+        // height — tanpa baris ini tombol setinggi 46px tetap ter-render 70px.
+        min-height: var(--gy-order-btn-h);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .gy-pay-btn__arrow {
+        flex: none;
+        font-size: 14px;
+    }
+}
+
+/* ===========================================================================
+   23. DRAWER SIDEBAR di <992px  (Fase E — "menu tidak terjangkau")
+   ===========================================================================
+   MASALAH: section 20 dulu menyembunyikan rel sidebar di <992px (`display:none`)
+   tanpa jalan lain ke menunya, jadi di ponsel & tablet item Outlet / Self Order /
+   Grabfood / Shopeefood / Gofood / Pengaturan dan Tutup Kasir sama sekali tidak
+   bisa dijangkau kasir.
+
+   KENAPA DRAWER UNTUK SELURUH <992px, bukan "sidebar penuh 200px" seperti
+   resep tablet: tata letak yang benar-benar berjalan
+   di 834px sekarang adalah 3 kolom kartu 123px + panel Order 400px bawaan Odoo
+   (aturan panel kita di-scope >=992px). Menyisipkan sidebar 200px menyisakan
+   234px untuk konten — kartunya tinggal ±62px — dan resep tablet itu menuntut
+   panel Order ditulis ulang lebih dulu (200px). Drawer membuat menu terjangkau
+   di SEMUA lebar tanpa menyentuh tata letak konten yang sudah terverifikasi;
+   sidebar penuh/rail untuk tablet tetap pekerjaan terpisah.
+
+   Geometri & warna mengikuti resep responsif:
+   panel min(240px, 82vw) · backdrop rgba(18,27,33,.45) · transisi .25s.
+
+   SATU PENYIMPANGAN yang disengaja dari resep itu: panel digeser dengan `left`,
+   BUKAN `transform: translateX(-100%)`. Alasannya teknis dan tidak bisa ditawar:
+   backdrop dirender sebagai ANAK panel, sedangkan `position: fixed` di dalam
+   leluhur yang ber-`transform` memakai leluhur ITU sebagai containing block —
+   backdrop-nya akan menutupi panel saja, bukan seluruh layar. Tanpa transform,
+   containing block-nya viewport, dan efek animasinya sama.
+   =========================================================================== */
+
+/* --- Tombol pemicu (di dalam .pos-leftheader; disisipkan topbar_patch.xml) --- */
+.gy-sidebar-toggle {
+    // Desktop: rel sidebar selalu terlihat, jadi tombol ini tidak punya pekerjaan.
+    display: none;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: var(--gy-iconbtn-size);   // 38px — sama dengan tombol barcode pos2
+    height: var(--gy-iconbtn-size);
+    padding: 0;
+    // Berbingkai, BUKAN ikon telanjang seperti hamburger di design: di topbar POS
+    // ia berdiri tepat di sebelah tombol Meja/Daftar/Order milik Odoo yang juga
+    // berbingkai (section 9), jadi gaya yang seragam terbaca sebagai "satu baris
+    // tombol", bukan tombol yang tertinggal sendiri.
+    border: 1px solid var(--gy-border);
+    border-radius: var(--gy-radius-control);
+    background: var(--gy-surface);
+    color: var(--gy-text);
+    font-size: 18px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+        background: var(--gy-surface-2);
+    }
+
+    &:active {
+        background: var(--gy-surface-3);
+    }
+
+    &:focus-visible {
+        outline: var(--gy-focus-ring-w) solid var(--gy-focus-ring);
+        outline-offset: var(--gy-focus-ring-offset);
+    }
+}
+
+// Tombol tutup di ujung baris merek. Hanya ada di dalam drawer (<992px), jadi
+// gaya dasarnya `display: none` — di >=992px baris merek tidak punya tombol ini
+// (tidak ada yang perlu ditutup: rel-nya permanen).
+.gy-sidebar__close {
+    display: none;
+    flex: none;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    margin-left: auto;   // menempel ke tepi kanan panel
+    padding: 0;
+    border: 0;
+    border-radius: var(--gy-radius-nav);
+    background: transparent;
+    color: var(--gy-text-muted);
+    font-size: 15px;
+    cursor: pointer;
+
+    &:hover {
+        background: var(--gy-surface-2);
+    }
+
+    &:active {
+        background: var(--gy-surface-3);
+    }
+
+    &:focus-visible {
+        outline: var(--gy-focus-ring-w) solid var(--gy-focus-ring);
+        outline-offset: var(--gy-focus-ring-offset);
+    }
+}
+
+.gy-drawer-backdrop {
+    // Hanya pernah dirender saat drawer terbuka (t-if di sidebar.xml), dan hanya
+    // berguna di <992px. Di >=992px drawer tidak bisa dibuka sama sekali, tapi
+    // `display: none` tetap ditulis supaya tidak bergantung pada "tidak mungkin
+    // dibuka" — nilai token di bawah juga tidak dipakai di sana.
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1040;
+    background: rgba(18, 27, 33, 0.45);
+    border: 0;
+}
+
+@media (max-width: 991.98px) {
+    .gy-sidebar-toggle {
+        display: inline-flex;
+    }
+
+    /* --- Panel jadi drawer off-canvas --- */
+    .gy-sidebar {
+        position: fixed;
+        top: 0;
+        bottom: 0;
+        // Digeser penuh ke luar layar (bukan sekadar `display: none`) supaya bisa
+        // dianimasikan masuk. `left` TIDAK dikunci 0 supaya containing block
+        // backdrop tetap viewport — lihat catatan di kepala section ini.
+        left: calc(-1 * var(--gy-drawer-w) - 24px);
+        width: var(--gy-drawer-w);
+        // Di ATAS semua isi POS, tapi di BAWAH dialog Bootstrap (1055): dialog
+        // kontrol pembukaan/pembayaran harus tetap bisa muncul di depan drawer.
+        z-index: 1050;
+        // `overflow: visible` menimpa aturan desktop: backdrop adalah ANAK panel
+        // dan anak ber-`position: fixed` tidak boleh terpotong. Daftar item nav
+        // tetap menggulir sendiri (.gy-sidebar__nav punya overflow-y: auto).
+        overflow: visible;
+        border-right: 0;
+        box-shadow: 0 20px 60px rgba(18, 27, 33, 0.22);
+        transition: left 0.25s ease;
+    }
+
+    .gy-sidebar--open {
+        left: 0;
+    }
+
+    .gy-drawer-backdrop {
+        display: block;
+    }
+
+    .gy-sidebar__close {
+        display: grid;
+    }
+}
+
+/* Ponsel: tombol pemicu dikecilkan 4px. Bukan hiasan — di 390px .pos-leftheader
+   hanya selebar 262px (sisanya milik .pos-rightheader bawaan Odoo) sedangkan isi
+   barisnya sudah 187px sebelum tombol kita masuk. Terukur: dengan 38px, tab order
+   di ujung baris terpotong 13px; dengan 34px, 9px. 34px masih di atas ambang
+   sasaran sentuh 44px? TIDAK — tapi tab order itu milik Odoo dan tidak bisa
+   dikecilkan, jadi salah satu harus mengalah, dan tombol yang punya 240px
+   alternatif (tombol × di dalam drawer, plus Esc) adalah pilihan yang lebih aman
+   untuk dikecilkan. */
+@media (max-width: 600px) {
+    .gy-sidebar-toggle {
+        width: 34px;
+        height: 34px;
+        font-size: 16px;
+    }
+}
+
+/* ===========================================================================
+   24. BAR AKSI BAWAH DI PONSEL (<768px) — "Bayar" & "Keranjang Belanja"
+   ===========================================================================
+   MASALAH (terukur 22 Sep 2026 di 390×844, keranjang 2 item): di bawah 768px
+   Odoo tidak menampilkan panel order sebagai panel samping (`.leftpane` jadi
+   0×0) melainkan memakai bar di dasar layar berisi DUA tombol: `Bayar
+   Rp 22.000,00` (150×70) dan `Keranjang Belanja · 2 item` (215×70). Keduanya
+   terukur `rgb(113, 99, 158)` (= #71639E, ungu bawaan Odoo) dengan radius 4px —
+   warna merek Odoo, bukan tema pos2, padahal keduanya adalah tombol yang paling
+   sering disentuh kasir di ponsel. Tidak ada satu pun aturan kita yang mengenainya
+   (`grep switchpane` di berkas ini = 0 hasil sebelum section ini).
+
+   Bar ini datang dari `point_of_sale/product_screen.xml` pada blok
+   `t-if="this.pos.isSmallProductScreen"` (`.switchpane` > `.btn-switchpane`),
+   dan `isSmallProductScreen` = `ui.size < SIZES.MD` → AKTIF di bawah 768px.
+   ANGKA 768 ITU HASIL UKUR, bukan bacaan dokumen: terukur di 767 bar-nya ADA
+   dan di 768 bar-nya TIDAK ADA (sekaligus panel order 400px bawaan Odoo muncul
+   kembali). Dugaan awal saya "selebar breakpoint drawer (992)" SALAH — kalau
+   ikut ditulis, aturan ini akan menyentuh rentang 768–991px yang tata letaknya
+   masih milik Odoo dan tidak pernah ikut dirancang di sini. Karena itu section
+   ini di-scope `max-width: 767.98px` + `.product-screen`: bar-nya hanya digayai
+   di tempat ia benar-benar dirender, dan struk (di luar `.product-screen`)
+   tidak tersentuh.
+
+   DUA hal yang mudah salah di sini:
+     1. `min-height` WAJIB ditulis. Odoo memasang `min-height: 70px` untuk
+        `.btn-switchpane` (dan `.pay-order-button`) di product_screen.scss;
+        `min-height` menang atas `height`, jadi menulis `height: 52px` saja
+        menghasilkan tombol 70px — jebakan yang sama sudah pernah terjadi di
+        panel order (§10e butir 12).
+     2. Status siap/belum siap dibaca dari class milik Odoo, bukan dari jumlah
+        baris order: templatnya sendiri yang menukar `btn-primary` (keranjang
+        ada isinya) dengan `btn-secondary` (kosong). Jadi di sini
+        `.pay-button.btn-primary` = merah penuh, `.pay-button.btn-secondary` =
+        permukaan redup — tanpa menebak-nebak keadaan keranjang.
+   =========================================================================== */
+
+@media (max-width: 767.98px) {
+    .product-screen .switchpane {
+        gap: var(--gy-control-gap);
+        padding: 8px;
+        background: var(--gy-surface);
+        border-top: 1px solid var(--gy-divider);
+    }
+
+    .product-screen .switchpane .btn-switchpane {
+        height: var(--gy-mobile-btn-h);
+        min-height: var(--gy-mobile-btn-h);
+        padding: 4px 12px;
+        border: 1px solid transparent;
+        border-radius: var(--gy-radius-control);
+        font-size: 15px;
+        font-weight: 700;
+        line-height: 1.15;
+        box-shadow: none;
+
+        // Baris kedua tombol (nominal pada Bayar, jumlah item pada Keranjang)
+        // tetap lebih kecil dan lebih redup supaya angka besar tetap yang
+        // dibaca lebih dulu, seperti di board.
+        small {
+            font-size: 12.5px;
+            font-weight: 600;
+            opacity: 0.85;
+        }
+
+        &:focus-visible {
+            outline: var(--gy-focus-ring-w) solid var(--gy-focus-ring);
+            outline-offset: var(--gy-focus-ring-offset);
+        }
+    }
+
+    // Aksi kedua (Keranjang / Products saat memindai): putih berbingkai.
+    .product-screen .switchpane .review-button,
+    .product-screen .switchpane .btn-switchpane.btn-secondary:not(.pay-button) {
+        background: var(--gy-surface);
+        border-color: var(--gy-border);
+        color: var(--gy-text);
+
+        &:hover {
+            background: var(--gy-surface-2);
+        }
+
+        &:active {
+            background: var(--gy-surface-3);
+        }
+    }
+
+    // Pane "Keranjang" di ponsel memakai baris aksi yang sama tingginya dengan bar
+    // katalog di atas. Terukur 22 Sep (390px): baris atas — Pelanggan · preset ·
+    // Simpan Order · ⋮ — 67px, baris bawah — Baru · Lanjut ke Pembayaran — 70px
+    // (70px karena `min-height` bawaan Odoo untuk tombol bayar, yang hanya
+    // ditimpa di >=992px oleh section 22). Disamakan ke 52px supaya kedua pane
+    // tidak terasa berbeda tinggi DAN daftar item dapat ±36px ruang tambahan.
+    // Scope-nya <768px, jadi rentang 768–991px (tata letak Odoo apa adanya)
+    // tetap 70px seperti sebelumnya — terbukti terukur di 768: pay 206×70.
+    .product-screen .pads .actionpad button.btn {
+        height: var(--gy-mobile-btn-h);
+        min-height: var(--gy-mobile-btn-h);
+    }
+
+    // Aksi utama: merah penuh, sama seperti tombol bayar di panel order desktop.
+    .product-screen .switchpane .pay-button.btn-primary {
+        background: var(--gy-accent);
+        border-color: var(--gy-accent);
+        color: #ffffff;
+
+        &:hover,
+        &:active {
+            background: var(--gy-accent-2);
+            border-color: var(--gy-accent-2);
+        }
+    }
+
+    // Keranjang masih kosong (Odoo menandainya `btn-secondary`): jangan berteriak
+    // merah untuk tombol yang belum ada gunanya.
+    .product-screen .switchpane .pay-button.btn-secondary {
+        background: var(--gy-surface-2);
+        border-color: var(--gy-border);
+        color: var(--gy-text-muted);
     }
 }

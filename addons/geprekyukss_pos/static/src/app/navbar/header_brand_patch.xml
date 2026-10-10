@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
+    <!--
+        Brand (logo + wordmark + tagline) di KIRI NAVBAR.
+
+        Kapan markup ini terlihat diatur di SATU tempat saja:
+        static/src/scss/pos_theme.scss section 1b — tampil HANYA di bawah
+        breakpoint lg (<992px). Di >=992px rel sidebar (section 20) yang membawa
+        brand, supaya tidak ada logo dobel; karena itu padding ruang di
+        `.pos-leftheader` juga hanya dipasang di blok media yang sama.
+
+        Beda antar lebar layar hanya UKURAN (section 1b): tablet 601-991px =
+        logo 40px + wordmark + tagline; ponsel <=600px = logo 30px + wordmark
+        satu baris (tagline dilepas). Markup-nya tidak dipotong per breakpoint,
+        jadi jangan menambahkan `t-if` lebar layar di sini — itu akan jadi aturan
+        tampilan kedua yang tidak bisa dilihat bersama aturan CSS-nya.
+
+        Jangan menambahkan aturan visibilitas brand di berkas lain. Aturan yang
+        tersebar di beberapa tempat adalah cacat yang baru saja dibereskan
+        (dulu >=1200px, <=600px, dan >=992px masing-masing mengatur sendiri).
+    -->
     <t t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
         <xpath expr="//div[hasclass('pos-leftheader')]" position="before">
             <div class="gy-header-brand">

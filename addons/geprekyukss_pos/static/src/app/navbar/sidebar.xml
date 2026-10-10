@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!--
+        Rel sidebar (komponen `geprekyukss_pos.GySidebar`).
+
+        Bahasa visual (tema terang-beraksen-merah):
+          - merek        : kotak logo `logo.jpg` 34px + wordmark dua warna +
+                           tagline "AYAM GEPREK", semuanya di dalam blok 44px.
+                           Ini REVISI 22 Sep 2026 atas keputusan Fase 1 yang
+                           melepas logonya mengikuti board: hasilnya di layar
+                           kasir hanya ada kata "Geprek Yukss" tanpa lambang,
+                           dan itulah "label perusahaan tanpa logo". Berkas
+                           logonya sama dengan brand navbar <992px (lihat
+                           app/navbar/header_brand_patch.xml) — satu berkas
+                           merek untuk seluruh addon. Aturan ukuran & sudutnya
+                           ada di pos_theme.scss section 20, jangan disalin ke
+                           sini.
+          - item nav     : bar 50px, ikon 16px, label 16px/500, sudut 8px
+          - item AKTIF   : tint merah #fbe6e4 + teks/ikon merah #c90e05,
+                           selebar isinya (bukan bar penuh)
+          - sisanya      : transparan, hover memakai permukaan-2
+          - footer       : HANYA "Tutup Kasir". Kartu kasir
+                           (avatar + nama kasir) dihapus dari sini karena
+                           posisinya sudah ada di kartu kasir topbar.
+
+        Kelas penanda item aktif (dibentuk dari `gy-nav-item` + sufiks "active")
+        ditulis di dalam t-att-class di bawah. Kelas itu HARUS muncul di berkas
+        ini: kalau berhenti dipakai di sini, selector-nya di `pos_theme.scss`
+        jadi selector mati — gaya yang tetap ada di CSS tapi tidak pernah
+        mengenai apa pun.
+
+        Fase E (drawer <992px): rel ini TIDAK LAGI hanya "rel tetap". Di bawah
+        992px panelnya jadi drawer off-canvas (pos_theme.scss section 23),
+        dibuka tombol `.gy-sidebar-toggle` yang hidup di komponen lain
+        (GySidebarToggle). Karena itu ada dua elemen tambahan di sini:
+          - `.gy-drawer-backdrop` : area gelap penutup layar, diklik = menutup;
+          - `.gy-sidebar__close`  : tombol x di ujung baris merek (jalan keluar
+                                    untuk pengguna keyboard/sentuh yang tidak
+                                    mau menebak bahwa backdrop bisa diklik).
+        Keduanya hanya terlihat di <992px, dan itu diatur CSS — bukan `t-if`
+        lebar layar, supaya tidak ada dua tempat yang memutuskan hal yang sama.
+        Satu pengecualian yang disengaja: `.gy-drawer-backdrop` memakai t-if
+        `drawer.open`, karena elemen dekoratif penutup layar tidak ada gunanya
+        dirender saat drawer tertutup (ia akan ikut masuk urutan Tab sia-sia).
+
+        CATATAN: nama kelasnya sengaja TIDAK ditulis utuh di dalam komentar ini.
+        XML melarang dua tanda hubung berurutan di dalam komentar, dan nama
+        kelas itu mengandung dua tanda hubung — menuliskannya di sini membuat
+        berkas gagal di-parse (bukan cuma peringatan gaya).
+    -->
+    <t t-name="geprekyukss_pos.GySidebar">
+        <aside class="gy-sidebar"
+               id="gy-sidebar"
+               t-ref="drawer"
+               t-att-class="{ 'gy-sidebar--open': drawer.open }">
+
+            <!-- Penutup layar. `aria-hidden` karena ini murni area klik: jalan
+                 keluar yang bisa diakses keyboard adalah Esc dan tombol x. -->
+            <div class="gy-drawer-backdrop"
+                 t-if="drawer.open"
+                 t-on-click="onBackdropClick"
+                 aria-hidden="true"/>
+
+            <!-- Merek. Warnanya (Geprek merah / Yukss gelap) diatur di
+                 pos_theme.scss section 20 — jangan menyalin warna ke sini.
+                 `alt` diisi "Geprekyukss": logonya berisi nama merek, jadi kalau
+                 gambar gagal dimuat, pembaca layar tetap membacakan nama
+                 perusahaannya — bukan kotak kosong tanpa label. -->
+            <div class="gy-sidebar__brand">
+                <img class="gy-sidebar__logo"
+                     src="/geprekyukss_pos/static/src/img/logo.jpg"
+                     alt="Geprekyukss"/>
+                <div class="gy-sidebar__wordmark-block">
+                    <div class="gy-sidebar__wordmark">
+                        <span class="gy-sidebar__word-1">Geprek</span><span class="gy-sidebar__word-2">Yukss</span>
+                    </div>
+                    <div class="gy-sidebar__tagline">AYAM GEPREK</div>
+                </div>
+                <!-- Tombol tutup drawer (hanya <992px). Di ujung baris merek,
+                     mengikuti kesepakatan desain ("tombol x di dalam drawer,
+                     di ujung baris logo"). -->
+                <button type="button"
+                        class="gy-sidebar__close"
+                        t-on-click="onCloseDrawer"
+                        aria-label="Tutup menu">
+                    <i class="fa fa-fw fa-times" role="img" aria-label="Tutup menu"/>
+                </button>
+            </div>
+
+            <nav class="gy-sidebar__nav">
+                <t t-foreach="menuItems" t-as="item" t-key="item.id">
+                    <button type="button"
+                            class="gy-nav-item"
+                            t-att-class="{ 'gy-nav-item--active': item.active }"
+                            t-on-click="() => this.onMenuClick(item)">
+                        <i t-attf-class="fa fa-fw {{ item.icon }}" role="img" t-att-aria-label="item.label"/>
+                        <span class="gy-nav-item__label" t-esc="item.label"/>
+                    </button>
+                </t>
+            </nav>
+
+            <!-- Blok bawah: tutup kasir (mengakhiri sesi POS).
+                 Nama kasir TIDAK lagi di sini (dulu dobel dengan kartu kasir
+                 topbar). Kelas gy-nav-item dipakai ulang supaya baris ini
+                 setinggi dan sebentuk baris nav lain, sesuai board. -->
+            <div class="gy-sidebar__footer">
+                <button type="button"
+                        class="gy-nav-item"
+                        t-on-click="() => this.onCloseRegister()">
+                    <i class="fa fa-fw fa-sign-out" role="img" aria-label="Tutup Kasir"/>
+                    <span class="gy-nav-item__label">Tutup Kasir</span>
+                </button>
+            </div>
+
+        </aside>
+    </t>
+
+    <!-- Tombol pemicu drawer. Markup-nya SEDERHANA: yang penting di sini hanya
+         kelas, `aria-expanded` (dibaca pembaca layar saat drawer buka/tutup),
+         dan `aria-controls` yang menunjuk ke id panelnya. Bentuk, ukuran, dan
+         kapan ia terlihat ada di pos_theme.scss section 23 — jangan menyalinnya
+         ke sini. -->
+    <t t-name="geprekyukss_pos.GySidebarToggle">
+        <button type="button"
+                class="gy-sidebar-toggle"
+                t-ref="toggle"
+                t-att-aria-expanded="drawer.open ? 'true' : 'false'"
+                aria-controls="gy-sidebar"
+                aria-label="Menu aplikasi"
+                t-on-click="onToggle">
+            <i class="fa fa-fw fa-bars" role="img" aria-label="Menu"/>
+        </button>
+    </t>
+</templates>

@@ -126,24 +126,33 @@
         <field name="target_move">posted</field>
     </record>
 
-    <!-- Kolom 1: bulan berjalan — mode fix (di-sync wrapper dari filter shell) -->
+    <!-- Kolom 1: bulan berjalan — mode relative (base date = date_to filter).
+         Wrapper A2 menyesuaikan window pada CLONE sementara, bukan record ini. -->
     <record id="mis_period_pl_month" model="mis.report.instance.period">
         <field name="name">Bulan Ini</field>
         <field name="report_instance_id" ref="mis_instance_pl"/>
         <field name="source">actuals</field>
-        <field name="mode">fix</field>
-        <field name="manual_date_from">2026-08-01</field>
-        <field name="manual_date_to">2026-08-31</field>
+        <field name="mode">relative</field>
+        <field name="type">m</field>
+        <field name="offset">0</field>
+        <field name="duration">1</field>
+        <field name="is_ytd" eval="False"/>
+        <field name="manual_date_from" eval="False"/>
+        <field name="manual_date_to" eval="False"/>
         <field name="sequence">10</field>
     </record>
-    <!-- Kolom 2: YTD (1 Jan s.d. akhir bulan filter) — di-sync wrapper -->
+    <!-- Kolom 2: YTD (1 Jan s.d. akhir bulan filter) — window tahun fiskal -->
     <record id="mis_period_pl_ytd" model="mis.report.instance.period">
         <field name="name">YTD</field>
         <field name="report_instance_id" ref="mis_instance_pl"/>
         <field name="source">actuals</field>
-        <field name="mode">fix</field>
-        <field name="manual_date_from">2026-01-01</field>
-        <field name="manual_date_to">2026-08-31</field>
+        <field name="mode">relative</field>
+        <field name="type">m</field>
+        <field name="offset">0</field>
+        <field name="duration">1</field>
+        <field name="is_ytd" eval="True"/>
+        <field name="manual_date_from" eval="False"/>
+        <field name="manual_date_to" eval="False"/>
         <field name="sequence">20</field>
     </record>
 

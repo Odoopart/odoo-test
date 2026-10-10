@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!--
+        DUA TAMBAHAN DI TOPBAR KIRI: judul halaman ("Order / Pilih Menu") dan
+        tombol pemicu drawer (<GySidebarToggle/>). Keduanya disisipkan di titik
+        yang sama — tepat sebelum `.navbar-menu` — karena itu satu-satunya titik
+        di `.pos-leftheader` yang mengalir (bukan diposisikan absolut) sehingga
+        tombolnya ikut aturan flex milik Odoo dan tidak mendesak tombol lain.
+        Keduanya juga SALING EKSKLUSIF: judul disembunyikan <1200px, tombol
+        drawer disembunyikan >=992px, jadi urutannya di DOM tidak pernah
+        terlihat bersamaan dan tidak perlu anchor.
+
+        Kenapa tombolnya tidak mendapat berkas tambalan sendiri: entri baru di
+        `__manifest__.py` TIDAK terbaca proses Odoo yang sedang jalan (daftar
+        berkas bundel dibekukan `lru_cache`), jadi berkas baru = ubah manifest
+        = wajib restart server.
+        Menumpang di berkas ini membuat tambalannya langsung berlaku, dan
+        urutannya ikut urutan elemen di bawah (deterministik, bukan tergantung
+        urutan berkas di bundle).
+
+        JUDUL TOPBAR — "Order / Pilih Menu" (pos2, topbar kiri, 20px/700).
+
+        Kenapa disisipkan sebelum `.navbar-menu`, bukan di awal `.pos-leftheader`:
+        `.pos-leftheader` isinya satu div flex (`w-100`, `overflow-auto`) yang
+        memuat tombol menu + tab order. Judul ditaruh DI DALAM div itu, tepat
+        sebelum tombol menu, supaya ikut aturan flex-nya dan tidak memaksa
+        `.pos-leftheader` menyusun ulang dua tingkat.
+
+        Kenapa hanya di ProductScreen:
+        Teksnya menggambarkan layar ini ("Order" = seksi, "Pilih Menu" = halaman).
+        Layar lain (Meja/Floor, Daftar Order, Pembayaran) punya konteks sendiri,
+        dan menampilkan "Pilih Menu" di sana akan menyesatkan. Ini juga sebabnya
+        teksnya TIDAK diterjemahkan lewat `_t` dari template statis: satu layar
+        = satu judul tetap.
+
+        Kenapa tanpa anchor ("after", …) di manifest:
+        Tiga modul lain juga menambal `point_of_sale.Navbar` (pos_restaurant,
+        pos_hr, pos_self_order), tapi semuanya menyasar anchor BERBEDA
+        (tombol Tables, tombol Lock, DropdownItem), sedangkan tambalan ini
+        menyasar `.navbar-menu`. Karena anchor-nya tidak beririsan, urutan
+        berkas di bundle tidak mengubah hasil — jadi tidak perlu anchor.
+        (Diperiksa langsung ke sumber Odoo 19: pos_*)Navbar.xml masing-masing.)
+
+        Catatan tampilan: judul ini disembunyikan di bawah 1200px lewat
+        pos_theme.scss section 21 — di layar sempit, header milik Odoo sudah
+        penuh tombol (Meja/Daftar/Order/tab order) dan appbar ringkas versi
+        pos2 baru dikerjakan di Fase E.
+    -->
+    <t t-inherit="point_of_sale.Navbar" t-inherit-mode="extension">
+        <xpath expr="//div[hasclass('navbar-menu')]" position="before">
+            <h1 class="gy-topbar__title"
+                t-if="this.pos.router.state.current === 'ProductScreen'">Order / Pilih Menu</h1>
+            <GySidebarToggle/>
+        </xpath>
+    </t>
+</templates>

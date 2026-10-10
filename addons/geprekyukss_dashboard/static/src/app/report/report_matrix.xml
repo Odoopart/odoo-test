@@ -4,13 +4,13 @@
     <t t-name="geprekyukss_dashboard.ReportMatrix">
         <div class="gk-rmatrix">
             <div class="gk-rmatrix-scroll">
-                <table>
+                <table aria-label="Matriks laporan">
                     <thead>
                         <!-- Header baris 1: label kolom (colspan aware) -->
                         <tr>
-                            <th rowspan="2" class="gk-col-left gk-rmatrix-kpi-head">KPI</th>
+                            <th scope="col" rowspan="2" class="gk-col-left gk-rmatrix-kpi-head">KPI</th>
                             <t t-foreach="props.payload.header[0].cols" t-as="col" t-key="col_index">
-                                <th t-att-colspan="col.colspan || 1" class="gk-col-center">
+                                <th scope="col" t-att-colspan="col.colspan || 1" class="gk-col-center">
                                     <span t-esc="col.label"/>
                                     <div t-if="col.description" class="gk-rmatrix-desc" t-esc="col.description"/>
                                 </th>
@@ -19,7 +19,7 @@
                         <!-- Header baris 2: subkolom (bila ada) -->
                         <tr>
                             <t t-foreach="props.payload.header[1].cols" t-as="col" t-key="col_index">
-                                <th class="gk-col-center" t-esc="col.label"/>
+                                <th scope="col" class="gk-col-center" t-esc="col.label"/>
                             </t>
                         </tr>
                     </thead>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!--
+        KERANGKA 3 KOLOM — sisipkan rel sidebar ke akar aplikasi POS.
+
+        Kenapa di `point_of_sale.Chrome` dan bukan di `point_of_sale.ProductScreen`:
+          Item nav-nya (Outlet, saluran pesanan, Pengaturan) bersifat tingkat
+          APLIKASI, bukan tingkat satu layar. Sidebar yang ikut terlihat saat
+          kasir pindah ke Pembayaran/Struk/Tutup Register lebih masuk akal
+          daripada sidebar yang muncul-hilang.
+
+        Kenapa cukup sisipkan, tanpa membungkus ulang DOM:
+          Template `point_of_sale.Chrome` (pos_app.xml) berbentuk
+              <div class="pos dvh-100 d-flex flex-column">
+                  <Navbar />
+                  <div class="pos-content …">…layar aktif…</div>
+              </div>
+          jadi `.pos` TEPAT punya 2 anak. Setelah <aside> disisipkan jadi 3 anak,
+          dan SCSS (section 20 pos_theme.scss) cukup mengalihkan `.pos` dari
+          flex-column ke grid lalu menaruh tiap anak di selnya. Tidak perlu
+          membungkus Navbar + konten dengan div baru — yang berarti tidak perlu
+          menyentuh template Navbar maupun konten.
+
+        `position="before"` pada //Navbar menaruh sidebar sebagai anak PERTAMA,
+        supaya urutan DOM ikut masuk akal untuk navigasi keyboard (sidebar dulu,
+        baru header, lalu konten).
+
+        RISIKO (dinyatakan terang-terangan): `.pos` adalah akar seluruh POS. Kalau
+        grid-nya salah, SEMUA layar ikut terdampak, bukan cuma layar kasir.
+        Peredamnya ada di SCSS: di bawah 992px sidebar disembunyikan dan tata
+        letak dikembalikan ke flex seperti sebelumnya.
+
+        CATATAN URUTAN: tidak ada modul Odoo lain yang menambal
+        `point_of_sale.Chrome` (sudah diperiksa di point_of_sale, pos_restaurant,
+        pos_self_order, pos_hr, pos_sale), jadi tambalan ini tidak berisiko
+        diterapkan terbalik dan tidak butuh anchor ("after", …) di manifest.
+    -->
+    <t t-inherit="point_of_sale.Chrome" t-inherit-mode="extension">
+        <xpath expr="//Navbar" position="before">
+            <GySidebar/>
+        </xpath>
+    </t>
+</templates>
