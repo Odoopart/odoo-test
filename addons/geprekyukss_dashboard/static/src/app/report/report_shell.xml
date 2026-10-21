@@ -78,8 +78,8 @@
                             <span class="gk-outlets-label">Koneksi outlet</span>
                             <span class="gk-live-flag"><span class="gk-live-dot" aria-hidden="true"/>Live</span>
                         </div>
-                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Restoran Pallangga</span></div>
-                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Restoran Mallengkeri</span></div>
+                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Outlet Pallangga</span></div>
+                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Outlet Mallengkeri</span></div>
                     </div>
                 </aside>
 

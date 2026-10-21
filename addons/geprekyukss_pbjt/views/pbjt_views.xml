@@ -56,7 +56,7 @@
         <record id="action_pbjt_config" model="ir.actions.act_window">
             <field name="name">Konfigurasi PBJT</field>
             <field name="res_model">pbjt.outlet.config</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
         </record>
 
         <!-- ================= REKONSILIASI PBJT ================= -->
@@ -145,7 +145,7 @@
         <record id="action_pbjt_reconciliation" model="ir.actions.act_window">
             <field name="name">Rekonsiliasi PBJT</field>
             <field name="res_model">pbjt.reconciliation</field>
-            <field name="view_mode">tree,form</field>
+            <field name="view_mode">list,form</field>
             <field name="context">{'search_default_group_outlet': 1}</field>
         </record>
 

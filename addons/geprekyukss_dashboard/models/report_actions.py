@@ -14,12 +14,10 @@ Prinsip (roadmap §C / keputusan Q1 kanonik):
 - Preview meniru jalur UI: data wizard di-serialisasi JSON-safe (tanggal →
   string) sebelum masuk report model — sama dengan round-trip RPC asli.
 
-Filter shell (Q3 keputusan): date range + outlet. Di build ini outlet TIDAK
-bisa menyaring laporan akuntansi (AFR/MIS): kedua pos.config berbagi journal
-yang sama (POSS id 9), pos.order tidak ter-link ke account.move, dan
-account.move.line tidak membawa dimensi outlet. Filter journal lama adalah
-no-op yang menyesatkan (temuan audit A1) — lihat OUTLET_FILTER_ENABLED.
-[] = tanpa filter.
+Filter shell (Q3 keputusan): date range + outlet. Sejak 13 Okt 2026 filter
+outlet NYATA untuk laporan ber-journal: tiap pos.config punya journal POS
+sendiri (POS Pallangga id 30 / POS Mallengkeri id 31) dan transaksi historis
+Jun–Agu sudah di-re-journal per outlet (temuan audit A1 diperbaiki).
 
 A2 (audit): periode MIS TIDAK lagi ditulis ke record persisten
 mis.report.instance. Tiap request memakai clone sementara (temporary=True)
@@ -91,12 +89,11 @@ class GkDashboardReportActions(models.AbstractModel):
         "general_ledger": "account_journal_ids",
         "journal_ledger": "journal_ids",
     }
-    # A1 (audit): filter outlet untuk laporan akuntansi DINONAKTIFKAN karena
-    # tidak ada dimensi outlet yang membedakan di account.move.line. Mapping
-    # outlet→journal bersifat no-op (semua outlet berbagi journal yang sama)
-    # sehingga laporan tampak terfilter padahal identik. Nyalakan kembali
-    # hanya jika journal/dimensi per outlet benar-benar tersedia.
-    OUTLET_FILTER_ENABLED = False
+    # A1 (audit) — DIPERBAIKI: sejak 13 Okt 2026 tiap outlet punya journal POS
+    # sendiri (POS Pallangga / POS Mallengkeri) dan transaksi historis Jun–Agu
+    # sudah di-re-journal per outlet. Filter outlet kini NYATA untuk laporan
+    # yang punya field journal (Trial Balance, Buku Besar, Journal Ledger).
+    OUTLET_FILTER_ENABLED = True
 
     # ------------------------------------------------------------------
     # PUBLIC API — dipanggil dari OWL via orm.call
@@ -135,6 +132,28 @@ class GkDashboardReportActions(models.AbstractModel):
         if report_key in self.MIS_REPORTS:
             return self._mis_export(report_key, params, fmt)
         raise ValueError("Laporan tidak dikenal: %s" % report_key)
+
+    @api.model
+    def get_mgmt_export_action(self, params, fmt):
+        """Ekspor Laporan Manajemen Multi-Outlet (PDF/XLSX).
+
+        Laporan mandiri (bukan AFR/MIS): laba rugi per outlet & konsolidasi,
+        indikator operasional, PBJT, rekonsiliasi pembayaran, neraca, arus kas.
+        Mengembalikan action `ir.actions.report` siap doAction() di klien.
+        """
+        params = dict(params or {})
+        xmlid = (
+            "geprekyukss_dashboard.action_report_mgmt_xlsx"
+            if fmt == "xlsx"
+            else "geprekyukss_dashboard.action_report_mgmt_pdf"
+        )
+        report = self.env.ref(xmlid)
+        data = {
+            "date_from": params.get("date_from"),
+            "date_to": params.get("date_to"),
+            "outlet_ids": params.get("outlet_ids") or [],
+        }
+        return report.report_action(self.env.company, data=data)
 
     # ------------------------------------------------------------------
     # AFR — preview via report model resmi (satu sumber compute)
@@ -188,6 +207,11 @@ class GkDashboardReportActions(models.AbstractModel):
             journal_ids = journal_field and self._outlet_journal_ids(params)
             if journal_field and journal_ids:
                 vals[journal_field] = [(6, 0, journal_ids)]
+            # Buku Besar (AFR): mesin menyaring lewat field `domain` wizard,
+            # bukan `account_journal_ids` (yang hanya untuk tampilan). Tanpa
+            # ini filter outlet tidak berpengaruh pada GL.
+            if report_key == "general_ledger" and journal_ids:
+                vals["domain"] = str([("journal_id", "in", journal_ids)])
         wizard = self.env[model_name].create(vals)
         wizard._set_default_wizard_values()
         return wizard

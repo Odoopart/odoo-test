@@ -280,6 +280,7 @@ export class GkDashboard extends Component {
             outletFilter: { id: "all", name: "Semua Outlet", ids: [] },
             availableOutlets: [{ id: "all", name: "Semua Outlet", ids: [] }],
             outletMenuOpen: false,
+            mgmtMenuOpen: false,
             lastUpdated: null,
         });
         this.tabs = TABS;
@@ -287,6 +288,7 @@ export class GkDashboard extends Component {
         this.reports = REPORTS;
         this.mainRef = useRef("main");
         this.outletWrapRef = useRef("outletWrap");
+        this.mgmtWrapRef = useRef("mgmtWrap");
         this.formatRp = formatRp;
         this.formatSigned = formatSigned;
         this.formatPct = formatPct;
@@ -299,6 +301,10 @@ export class GkDashboard extends Component {
             if (wrap && !wrap.contains(ev.target)) {
                 this.state.outletMenuOpen = false;
             }
+            const mwrap = this.mgmtWrapRef && this.mgmtWrapRef.el;
+            if (mwrap && !mwrap.contains(ev.target)) {
+                this.state.mgmtMenuOpen = false;
+            }
         });
         // A11Y (Fase 5): Escape menutup modal audit trail / dropdown outlet —
         // perilaku wajib untuk role="dialog" & aria-haspopup.
@@ -308,6 +314,8 @@ export class GkDashboard extends Component {
                 this.closeModal();
             } else if (this.state.outletMenuOpen) {
                 this.state.outletMenuOpen = false;
+            } else if (this.state.mgmtMenuOpen) {
+                this.state.mgmtMenuOpen = false;
             }
         });
         this.loadAvailableOutlets();
@@ -2049,8 +2057,42 @@ export class GkDashboard extends Component {
         }
     }
 
-    openReports(reportKey = null) {
-        const props = {
+    toggleMgmtMenu() {
+        this.state.mgmtMenuOpen = !this.state.mgmtMenuOpen;
+    }
+
+    /** Ekspor Laporan Manajemen F&B Multi-Outlet (PDF/XLSX) periode aktif. */
+    async exportMgmtReport(fmt) {
+        if (this.state.exporting) return;
+        this.state.mgmtMenuOpen = false;
+        this.state.exporting = true;
+        try {
+            const action = await this.orm.call(
+                "geprekyukss.dashboard.report.actions",
+                "get_mgmt_export_action",
+                [
+                    {
+                        date_from: this.period.date_from,
+                        date_to: this.period.date_to,
+                        outlet_ids: this.state.outletFilter.ids,
+                    },
+                    fmt,
+                ],
+            );
+            await this.action.doAction(action);
+        } catch (e) {
+            console.error("mgmt report export failed", e);
+            const msg =
+                (e && e.message && e.message.data && e.message.data.message) ||
+                (e && e.message) ||
+                "Ekspor laporan manajemen gagal.";
+            this.notification.add(msg, { type: "danger" });
+        } finally {
+            this.state.exporting = false;
+        }
+    }
+
+    openReports(reportKey = null) {        const props = {
             initialYear: 2026,
             initialMonth: 8,
             outletFilter: { ...this.state.outletFilter },

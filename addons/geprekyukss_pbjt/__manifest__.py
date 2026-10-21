@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Geprekyukss - PBJT (Pajak Daerah F&B)",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Accounting/Localizations",
     "summary": "PBJT Makanan & Minuman (Pajak Restoran) per outlet + laporan rekonsiliasi",
     "description": """

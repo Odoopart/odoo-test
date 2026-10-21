@@ -86,6 +86,23 @@
                                     t-att-title="state.exporting ? 'Menyiapkan XLSX…' : 'Ekspor XLSX Laba Rugi'">
                                 <t t-out="icons.download"/> XLSX
                             </button>
+                            <div class="gk-pill-menu-wrap" t-ref="mgmtWrap">
+                                <button class="gk-btn gk-hidden-mobile" t-on-click.stop="toggleMgmtMenu"
+                                        t-att-disabled="state.exporting"
+                                        aria-haspopup="true"
+                                        t-att-aria-expanded="state.mgmtMenuOpen ? 'true' : 'false'"
+                                        title="Laporan Manajemen F&amp;B Multi-Outlet (per outlet, konsolidasi, PBJT, neraca, arus kas)">
+                                    <i class="fa fa-file-text-o" aria-hidden="true"/> Laporan Mgmt
+                                </button>
+                                <div t-if="state.mgmtMenuOpen" class="gk-pill-menu">
+                                    <button class="gk-pill-item" t-on-click.stop="() => this.exportMgmtReport('pdf')">
+                                        <i class="fa fa-file-pdf-o" aria-hidden="true"/> PDF — Laporan Manajemen
+                                    </button>
+                                    <button class="gk-pill-item" t-on-click.stop="() => this.exportMgmtReport('xlsx')">
+                                        <i class="fa fa-file-excel-o" aria-hidden="true"/> XLSX — Laporan Manajemen
+                                    </button>
+                                </div>
+                            </div>
                             <div class="gk-avatar" title="Admin Geprekyukss" role="img" aria-label="Pengguna: Admin Geprekyukss">A</div>
                         </div>
                     </div>
@@ -125,8 +142,8 @@
                             <span class="gk-outlets-label">Koneksi outlet</span>
                             <span class="gk-live-flag"><span class="gk-live-dot" aria-hidden="true"/>Live</span>
                         </div>
-                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Restoran Pallangga</span></div>
-                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Restoran Mallengkeri</span></div>
+                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Outlet Pallangga</span></div>
+                        <div class="gk-outlet"><span class="gk-dot" aria-hidden="true"/><span class="gk-outlet-name">Outlet Mallengkeri</span></div>
                         <div class="gk-updated"><i class="fa fa-clock-o" aria-hidden="true"/>Diperbarui <t t-esc="lastUpdatedLabel"/></div>
                     </div>
                 </aside>

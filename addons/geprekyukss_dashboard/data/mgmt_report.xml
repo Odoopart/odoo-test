@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ============================================================
+             Laporan Manajemen Keuangan F&B Multi-Outlet
+             (Laba Rugi per outlet & konsolidasi, indikator operasional,
+              PBJT, rekonsiliasi pembayaran, neraca, arus kas).
+             Dipanggil dari Dashboard Keuangan → tombol "Laporan Mgmt".
+             ============================================================ -->
+        <record id="action_report_mgmt_pdf" model="ir.actions.report">
+            <field name="name">Laporan Manajemen Multi-Outlet (PDF)</field>
+            <field name="model">res.company</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">geprekyukss_dashboard.report_mgmt_multi_outlet</field>
+            <field name="report_file">geprekyukss_dashboard.report_mgmt_multi_outlet</field>
+            <field name="print_report_name">'Laporan Manajemen Multi-Outlet'</field>
+            <field name="attachment_use" eval="False"/>
+        </record>
+
+        <record id="action_report_mgmt_xlsx" model="ir.actions.report">
+            <field name="name">Laporan Manajemen Multi-Outlet (XLSX)</field>
+            <field name="model">res.company</field>
+            <field name="report_type">xlsx</field>
+            <field name="report_name">geprekyukss_dashboard.report_mgmt_multi_outlet_xlsx</field>
+            <field name="report_file">geprekyukss_dashboard.report_mgmt_multi_outlet_xlsx</field>
+        </record>
+    </data>
+</odoo>

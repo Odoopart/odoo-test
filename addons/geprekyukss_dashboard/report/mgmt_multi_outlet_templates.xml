@@ -1,0 +1,326 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         Laporan Manajemen Keuangan F&B Multi-Outlet (PDF)
+         report_name: geprekyukss_dashboard.report_mgmt_multi_outlet
+         ============================================================ -->
+    <template id="report_mgmt_multi_outlet">
+      <t t-call="web.html_container">
+        <t t-set="o" t-value="v"/>
+        <main class="gk-mgmt">
+            <style>
+                .gk-mgmt { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 10px; color: #1e293b; }
+                .gk-mgmt h1 { font-size: 17px; margin: 0 0 2px 0; color: #0b2545; }
+                .gk-mgmt h2 { font-size: 12px; margin: 18px 0 6px 0; color: #0b2545;
+                    border-bottom: 2px solid #0b2545; padding-bottom: 3px; }
+                .gk-mgmt .sub { font-size: 9px; color: #64748b; }
+                .gk-mgmt .banner { background: #0b2545; color: #fff; padding: 8px 10px; margin-bottom: 4px; }
+                .gk-mgmt .banner h1 { color: #fff; }
+                .gk-mgmt .banner .sub { color: #cbd5e1; }
+                .gk-mgmt table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+                .gk-mgmt th, .gk-mgmt td { border: 1px solid #cbd5e1; padding: 3px 5px; vertical-align: top; }
+                .gk-mgmt th { background: #e2e8f0; text-align: center; font-weight: bold; }
+                .gk-mgmt td.num { text-align: right; white-space: nowrap; }
+                .gk-mgmt td.label { text-align: left; }
+                .gk-mgmt tr.bold td { font-weight: bold; background: #f1f5f9; }
+                .gk-mgmt tr.total td { font-weight: bold; background: #dbeafe; }
+                .gk-mgmt tr.sub2 td { color: #475569; }
+                .gk-mgmt .neg { color: #b91c1c; }
+                .gk-mgmt .pos { color: #047857; }
+                .gk-mgmt .note { font-size: 8px; color: #64748b; margin-top: 8px; line-height: 1.35; }
+                .gk-mgmt .pagebreak { page-break-before: always; }
+                .gk-mgmt .kpi-row { display: table; width: 100%; margin-top: 6px; }
+                .gk-mgmt .kpi { display: table-cell; width: 25%; border: 1px solid #cbd5e1; padding: 6px; text-align: center; }
+                .gk-mgmt .kpi .v { font-size: 13px; font-weight: bold; color: #0b2545; }
+                .gk-mgmt .kpi .l { font-size: 8px; color: #64748b; }
+            </style>
+
+            <!-- ================= HALAMAN 1 ================= -->
+            <div class="banner">
+                <h1 t-esc="o['company_name']"/>
+                <div style="font-size:12px;font-weight:bold;">Laporan Laba Rugi Manajemen per Outlet dan Konsolidasi</div>
+                <div class="sub">Bulan yang berakhir <t t-esc="o['date_to']"/> · Disajikan dalam Rupiah · Sumber: Odoo ERP</div>
+            </div>
+            <div class="sub">Dibuat: <t t-esc="o['generated_at']"/> · Rentang <t t-esc="o['date_from']"/> s/d <t t-esc="o['date_to']"/> (<t t-esc="o['days']"/> hari)</div>
+
+            <h2>Laba Rugi Manajemen per Outlet</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Keterangan</th>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <th t-esc="ou['name']"/>
+                        </t>
+                        <th>Total Outlet</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="label">Penjualan bruto (termasuk PBJT)</td>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <td class="num" t-esc="fmt(ou['gross'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt(o['outlet_total']['gross'])"/>
+                    </tr>
+                    <tr class="sub2">
+                        <td class="label">PBJT (10%, termasuk harga)</td>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <td class="num" t-esc="'(' + fmt(ou['tax']) + ')'"/>
+                        </t>
+                        <td class="num" t-esc="'(' + fmt(o['outlet_total']['tax']) + ')'"/>
+                    </tr>
+                    <tr class="bold">
+                        <td class="label">Penjualan neto (di luar PBJT)</td>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <td class="num" t-esc="fmt(ou['netto'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt(o['outlet_total']['netto'])"/>
+                    </tr>
+                    <tr>
+                        <td class="label">Harga pokok penjualan (estimasi)</td>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <td class="num" t-esc="'(' + fmt(ou['hpp']) + ')'"/>
+                        </t>
+                        <td class="num" t-esc="'(' + fmt(o['outlet_total']['hpp']) + ')'"/>
+                    </tr>
+                    <tr class="bold">
+                        <td class="label">Margin kontribusi outlet</td>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <td class="num" t-esc="fmt(ou['gross_profit'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt(o['outlet_total']['gross_profit'])"/>
+                    </tr>
+                    <tr>
+                        <td class="label">Margin kontribusi (%)</td>
+                        <t t-foreach="o['outlets']" t-as="ou" t-key="ou.id">
+                            <td class="num" t-esc="fmt_pct(ou['margin'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt_pct(o['outlet_total']['margin'])"/>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="note">Margin kontribusi outlet = penjualan neto − HPP estimasi (qty × standard price). Beban operasional (gaji, sewa, utilitas, penyusutan) hanya tersedia pada level konsolidasi karena buku besar belum membawa dimensi outlet — karena itu laba per outlet di sini adalah kontribusi, bukan laba bersih outlet.</p>
+
+            <h2>Konsolidasi — Laba Rugi (buku besar)</h2>
+            <table>
+                <tbody>
+                    <tr><td class="label">Penjualan neto</td><td class="num" t-esc="fmt(o['pl']['income'])"/></tr>
+                    <tr><td class="label">Harga pokok penjualan</td><td class="num" t-esc="'(' + fmt(o['pl']['hpp']) + ')'"/></tr>
+                    <tr class="bold"><td class="label">Laba bruto</td><td class="num" t-esc="fmt(o['pl']['gross_profit'])"/></tr>
+                    <tr><td class="label">Margin laba bruto (%)</td><td class="num" t-esc="fmt_pct(o['pl']['gross_margin'])"/></tr>
+                    <t t-foreach="o['pl']['opex_lines']" t-as="e" t-key="e['code']">
+                        <tr class="sub2">
+                            <td class="label"><t t-esc="e['name']"/></td>
+                            <td class="num" t-esc="'(' + fmt(e['amount']) + ')'"/>
+                        </tr>
+                    </t>
+                    <tr class="bold"><td class="label">Total beban operasional</td><td class="num" t-esc="'(' + fmt(o['pl']['opex_total']) + ')'"/></tr>
+                    <tr class="bold"><td class="label">EBITDA (kontribusi konsolidasi)</td><td class="num" t-esc="fmt(o['pl']['ebitda'])"/></tr>
+                    <tr><td class="label">Penyusutan aset</td><td class="num" t-esc="'(' + fmt(o['pl']['dep_total']) + ')'"/></tr>
+                    <tr class="bold"><td class="label">Laba usaha (EBIT)</td><td class="num" t-esc="fmt(o['pl']['ebit'])"/></tr>
+                    <tr class="total"><td class="label">LABA BERSIH PERIODE BERJALAN</td><td class="num" t-esc="fmt(o['pl']['net_profit'])"/></tr>
+                    <tr><td class="label">Margin bersih (%)</td><td class="num" t-esc="fmt_pct(o['pl']['net_margin'])"/></tr>
+                </tbody>
+            </table>
+
+            <h2>Indikator vs Target Manajemen</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Indikator</th>
+                        <th>Aktual</th>
+                        <th>Target</th>
+                        <th>Selisih</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="o['checks']" t-as="c" t-key="c['label']">
+                        <tr>
+                            <td class="label" t-esc="c['label']"/>
+                            <td class="num" t-esc="fmt_pct(c['actual'])"/>
+                            <td class="num" t-esc="fmt_pct(c['target'])"/>
+                            <td t-att-class="'num ' + ('pos' if c['ok'] else 'neg')" t-esc="fmt_dec(c['delta']) + ' poin'"/>
+                            <td t-att-class="'num ' + ('pos' if c['ok'] else 'neg')" t-esc="c['ok'] and 'Sehat' or 'Review'"/>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+            <p class="note">Target bersifat indikatif manajemen: Food cost 35% · Gross margin 65% · Net margin 12% · Beban gaji 18% (toleransi masing-masing ±4–6 poin). Status "Review" muncul otomatis bila aktual di luar ambang.</p>
+
+            <!-- ================= HALAMAN 2 ================= -->
+            <div class="pagebreak"/>
+            <div class="banner">
+                <h1 t-esc="o['company_name']"/>
+                <div style="font-size:12px;font-weight:bold;">Indikator Kinerja Operasional, PBJT &amp; Rekonsiliasi Penerimaan</div>
+                <div class="sub">Periode s/d <t t-esc="o['date_to']"/></div>
+            </div>
+
+            <h2>Indikator Kinerja Operasional per Outlet</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Indikator</th>
+                        <t t-foreach="o['indicators']" t-as="it" t-key="it.name">
+                            <th t-esc="it['name']"/>
+                        </t>
+                        <th t-esc="o['indicators_total']['name']"/>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="label">Jumlah transaksi (struk)</td>
+                        <t t-foreach="o['indicators']" t-as="it" t-key="it.name">
+                            <td class="num" t-esc="fmt_int(it['order_count'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt_int(o['indicators_total']['order_count'])"/>
+                    </tr>
+                    <tr>
+                        <td class="label">Rata-rata nilai per struk</td>
+                        <t t-foreach="o['indicators']" t-as="it" t-key="it.name">
+                            <td class="num" t-esc="fmt(it['avg_ticket'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt(o['indicators_total']['avg_ticket'])"/>
+                    </tr>
+                    <tr>
+                        <td class="label">Penjualan neto per hari</td>
+                        <t t-foreach="o['indicators']" t-as="it" t-key="it.name">
+                            <td class="num" t-esc="fmt(it['per_day'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt(o['indicators_total']['per_day'])"/>
+                    </tr>
+                    <tr>
+                        <td class="label">Transaksi per hari</td>
+                        <t t-foreach="o['indicators']" t-as="it" t-key="it.name">
+                            <td class="num" t-esc="fmt_dec(it['per_day_orders'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt_dec(o['indicators_total']['per_day_orders'])"/>
+                    </tr>
+                    <tr>
+                        <td class="label">Food cost aktual (%)</td>
+                        <t t-foreach="o['indicators']" t-as="it" t-key="it.name">
+                            <td class="num" t-esc="fmt_pct(it['food_cost_pct'])"/>
+                        </t>
+                        <td class="num" t-esc="fmt_pct(o['indicators_total']['food_cost_pct'])"/>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h2>Pajak Daerah PBJT (memo liabilitas)</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align:left;">Outlet</th>
+                        <th>Daerah</th>
+                        <th>Penjualan bruto</th>
+                        <th>DPP</th>
+                        <th>PBJT riil</th>
+                        <th>Dibayar ke Bapenda</th>
+                        <th>Selisih</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="o['pbjt']['rows']" t-as="p" t-key="p['outlet']">
+                        <tr>
+                            <td class="label" t-esc="p['outlet']"/>
+                            <td class="label" t-esc="p['daerah']"/>
+                            <td class="num" t-esc="fmt(p['gross'])"/>
+                            <td class="num" t-esc="fmt(p['dpp'])"/>
+                            <td class="num" t-esc="fmt(p['real_tax'])"/>
+                            <td class="num" t-esc="fmt(p['negotiated'])"/>
+                            <td t-att-class="'num ' + p['gap_class']" t-esc="fmt(p['gap'])"/>
+                        </tr>
+                    </t>
+                    <tr class="total">
+                        <td class="label">Total</td>
+                        <td/>
+                        <td class="num" t-esc="fmt(o['pbjt']['totals'].get('gross', 0))"/>
+                        <td class="num" t-esc="fmt(o['pbjt']['totals'].get('dpp', 0))"/>
+                        <td class="num" t-esc="fmt(o['pbjt']['totals'].get('real_tax', 0))"/>
+                        <td class="num" t-esc="fmt(o['pbjt']['totals'].get('negotiated', 0))"/>
+                        <td class="num" t-esc="fmt(o['pbjt']['totals'].get('gap', 0))"/>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="note">Tarif PBJT makanan/minuman 10% (Perda Kota Makassar No. 1 Tahun 2024). Nilai PBJT tertanam di harga jual (price include). Selisih positif = potensi kurang setor dan perlu review.</p>
+
+            <h2>Rekonsiliasi Penerimaan per Metode Pembayaran (POS)</h2>
+            <table>
+                <thead>
+                    <tr><th style="text-align:left;">Metode</th><th>Jumlah transaksi</th><th>Nilai</th><th>% dari total</th></tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="o['payments']" t-as="p" t-key="p['name']">
+                        <tr>
+                            <td class="label" t-esc="p['name']"/>
+                            <td class="num" t-esc="fmt_int(p['order_count'])"/>
+                            <td class="num" t-esc="fmt(p['amount'])"/>
+                            <td class="num" t-esc="fmt_pct(p['pct'])"/>
+                        </tr>
+                    </t>
+                    <tr class="total">
+                        <td class="label">Total POS</td>
+                        <td/>
+                        <td class="num" t-esc="fmt(o['payments_total'])"/>
+                        <td class="num">100,0%</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="note">Total POS di atas adalah penerimaan bruto kasir. Rekonsiliasi terhadap mutasi bank/settlement platform belum tersedia otomatis (settlement pending = 0 pada build ini).</p>
+
+            <!-- ================= HALAMAN 3 ================= -->
+            <div class="pagebreak"/>
+            <div class="banner">
+                <h1 t-esc="o['company_name']"/>
+                <div style="font-size:12px;font-weight:bold;">Laporan Posisi Keuangan &amp; Arus Kas</div>
+                <div class="sub">Posisi per <t t-esc="o['date_to']"/> · Disajikan dalam Rupiah</div>
+            </div>
+
+            <h2>Laporan Posisi Keuangan (Neraca)</h2>
+            <table>
+                <thead>
+                    <tr><th style="text-align:left;">Aset</th><th style="width:22%;">Jumlah</th>
+                        <th style="text-align:left;">Liabilitas &amp; Ekuitas</th><th style="width:22%;">Jumlah</th></tr>
+                </thead>
+                <tbody>
+                    <t t-foreach="o['balance']['pairs']" t-as="pr" t-key="pr['lname'] + pr['rname']">
+                        <tr t-att-class="(pr['lbold'] or pr['rbold']) and 'bold' or ''">
+                            <td class="label" t-esc="pr['lname']"/>
+                            <td class="num">
+                                <t t-if="pr['lval'] is not None" t-esc="fmt(pr['lval'])"/>
+                            </td>
+                            <td class="label" t-esc="pr['rname']"/>
+                            <td class="num">
+                                <t t-if="pr['rval'] is not None" t-esc="fmt(pr['rval'])"/>
+                            </td>
+                        </tr>
+                    </t>
+                </tbody>
+            </table>
+            <p class="note">
+                Aset <t t-esc="fmt(o['balance']['assets_total'])"/> · Liabilitas + Ekuitas <t t-esc="fmt(o['balance']['liab_equity_total'])"/> ·
+                Selisih <t t-esc="fmt(o['balance']['assets_total'] - o['balance']['liab_equity_total'])"/>. Termasuk Laba (Rugi) Tahun Berjalan
+                <t t-esc="fmt(o['balance']['current_earnings'])"/> sebagai bagian ekuitas.
+            </p>
+
+            <h2>Laporan Arus Kas Ringkas (metode tak langsung)</h2>
+            <table>
+                <tbody>
+                    <tr><td class="label">Arus kas dari aktivitas operasi</td><td class="num" t-esc="fmt_signed(o['cashflow'].get('operasi', 0))"/></tr>
+                    <tr><td class="label">Arus kas dari aktivitas investasi</td><td class="num" t-esc="fmt_signed(o['cashflow'].get('investasi', 0))"/></tr>
+                    <tr><td class="label">Arus kas dari aktivitas pendanaan</td><td class="num" t-esc="fmt_signed(o['cashflow'].get('pendanaan', 0))"/></tr>
+                    <tr class="bold"><td class="label">Kenaikan (penurunan) neto kas</td><td class="num" t-esc="fmt_signed(o['cashflow'].get('delta_cash', 0))"/></tr>
+                    <tr><td class="label">Kas &amp; bank awal periode</td><td class="num" t-esc="fmt(o['cashflow'].get('cash_prev', 0))"/></tr>
+                    <tr class="total"><td class="label">Kas &amp; bank akhir periode</td><td class="num" t-esc="fmt(o['cashflow'].get('cash_now', 0))"/></tr>
+                </tbody>
+            </table>
+            <p class="note">
+                Laporan ini dihasilkan otomatis dari Odoo ERP (data POS + buku besar posted). Angka konsolidasi (P&amp;L, neraca, arus kas) berasal dari
+                compute MIS Builder / buku besar; angka per outlet adalah margin kontribusi (HPP estimasi). Dokumen manajemen — bukan laporan audit.
+            </p>
+        </main>
+      </t>
+    </template>
+
+</odoo>

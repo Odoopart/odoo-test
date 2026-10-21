@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     "name": "Geprekyukss - Financial Dashboard",
-    "version": "19.0.1.0.0",
+    "version": "19.0.1.1.0",
     "category": "Accounting/Accounting",
     "summary": "Dashboard laporan keuangan live (4 tab) + report shell AFR/MIS untuk Geprekyukss",
     "description": """
@@ -17,12 +17,15 @@ laporan statis.
         "stock",
         "account_asset_management",
         "mis_builder_cash_flow",
+        "report_xlsx",
     ],
     "data": [
         "views/menus.xml",
         "data/mis_report_pl.xml",
         "data/mis_report_bs.xml",
         "data/mis_report_cf_labels.xml",
+        "report/mgmt_multi_outlet_templates.xml",
+        "data/mgmt_report.xml",
     ],
     "assets": {
         "web.assets_backend": [

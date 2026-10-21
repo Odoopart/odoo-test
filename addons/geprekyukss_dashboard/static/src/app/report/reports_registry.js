@@ -107,14 +107,16 @@ export function getReport(key) {
 }
 
 /**
- * A1 (audit): laporan akuntansi (AFR/MIS) bersifat KONSOLIDASI — tidak ada
- * dimensi outlet di account.move.line (kedua outlet berbagi journal yang
- * sama, pos.order tidak ter-link ke account.move). Karena itu filter outlet
- * tidak boleh ditampilkan sebagai aktif untuk laporan ini; shell menandainya
- * "Konsolidasi". Tambahkan key di sini bila kelak sebuah laporan benar-benar
- * mendukung filter outlet.
+ * A1 (audit) — DIPERBAIKI 13 Okt 2026: tiap outlet kini punya journal POS
+ * sendiri (POS Pallangga / POS Mallengkeri) dan transaksi historis sudah
+ * di-re-journal per outlet. Laporan yang punya field journal dapat difilter
+ * nyata per outlet.
  */
-export const OUTLET_FILTER_REPORTS = new Set();
+export const OUTLET_FILTER_REPORTS = new Set([
+    "trial_balance",
+    "general_ledger",
+    "journal_ledger",
+]);
 
 export function supportsOutlet(key) {
     return OUTLET_FILTER_REPORTS.has(key);
